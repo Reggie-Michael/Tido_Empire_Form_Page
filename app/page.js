@@ -177,7 +177,7 @@ export default function Home() {
               Dear valued stakeholders, We are excited to announce that Tido
               Empire International Limited has been awarded the contract to
               develop a modern market in the AMAC area council. This project is
-              not just about building a market, it's about creating a
+              not just about building a market, it&apos;s about creating a
               sustainable future for generations to come.
             </p>
             <button
@@ -219,7 +219,7 @@ export default function Home() {
                     We are excited to announce that Tido Empire International
                     Limited has been awarded the contract to develop a modern
                     market in the AMAC area council. This project is not just
-                    about building a market, it's about creating a sustainable
+                    about building a market, it&apos;s about creating a sustainable
                     future for generations to come.
                   </p>
                   <h6 className="text-white text-lg leading-7 font-medium mb-2">
@@ -227,7 +227,7 @@ export default function Home() {
                   </h6>
                   <p className="text-white text-base leading-7 whitespace-break-spaces">
                     The existing market in the AMAC area council has served its
-                    purpose, but it's time for a change. We believe that a
+                    purpose, but it&apos;s time for a change. We believe that a
                     modern, fully-equipped, functional ultra-modern market of
                     over 800 shops is the solution to the challenges faced by
                     the old market. This new market will not only provide a
