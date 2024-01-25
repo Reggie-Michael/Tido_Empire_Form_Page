@@ -1,18 +1,28 @@
 "use client";
 import Carousel from "@/components/Carousel";
 import Navbar from "@/components/Navbar";
-import { faXmark } from "@fortawesome/free-solid-svg-icons";
+import {
+  faArrowRight,
+  faArrowUp,
+  faXmark,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 export default function Home() {
   // const [projectButtonHovered, setProjectButtonHovered] = useState(false);
   const [projectButtonText, setProjectButtonText] = useState("Read More");
   const [letterVisible, setLetterVisible] = useState(false);
+  const homeRef = useRef(null);
+  const aboutRef = useRef(null);
+  const projectRef = useRef(null);
+  const [activeSection, setActiveSection] = useState(null);
 
+
+ 
   const handleProjectHoverIn = () => {
     let dots = 0;
     let timer = 200;
@@ -37,24 +47,111 @@ export default function Home() {
   const hideLetter = () => setLetterVisible(false);
   const currentYear = new Date().getFullYear();
 
+  // Function to scroll back to the top smoothly
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  // Effect to manage overflow based on modal state
+  useEffect(() => {
+    // Add or remove 'overflow-hidden' class based on the modal state
+    if (letterVisible) {
+      document.body.classList.add("overflow-hidden");
+    } else {
+      document.body.classList.remove("overflow-hidden");
+    }
+
+    // Cleanup function to remove the class when the component unmounts or when modal is closed
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, [letterVisible]);
+
+  // further implement \\
+
+  // const getMargins = (element) => {
+  //   const computedStyle = window.getComputedStyle(element);
+  //   const marginTop = parseFloat(computedStyle.marginTop);
+  //   const marginBottom = parseFloat(computedStyle.marginBottom);
+  //   return { marginTop, marginBottom };
+  // };
+  
+
+
+  // useEffect(() => {
+  //   const handleScroll = () => {
+  //     const scrollPosition = window.scrollY;
+  
+  //     // Get the dimensions and position of each section
+  //     const aboutSection = aboutRef.current.getBoundingClientRect();
+  //     const projectSection = projectRef.current.getBoundingClientRect();
+  
+  //     // Get margins dynamically
+  //     const aboutMargins = getMargins(aboutRef.current);
+  //     const projectMargins = getMargins(projectRef.current);
+  
+  //     // Adjust the buffer values based on margins
+  //     const buffer = 20; // Adjust this value based on your needs
+  
+  //     const aboutSectionTop = aboutSection.top - buffer - aboutMargins.marginTop;
+  //     const aboutSectionBottom = aboutSection.bottom + buffer + aboutMargins.marginBottom;
+  //     const projectSectionTop = projectSection.top - buffer - projectMargins.marginTop;
+  //     const projectSectionBottom = projectSection.bottom + buffer + projectMargins.marginBottom;
+  
+  //     // Check if scroll position is within the height range of each section
+  //     if (
+  //       scrollPosition >= 0 &&
+  //       scrollPosition < aboutSectionTop
+  //     ) {
+  //       setActiveSection('home');
+  //     } else if (
+  //       scrollPosition >= aboutSectionTop &&
+  //       scrollPosition < aboutSectionBottom
+  //     ) {
+  //       setActiveSection('about');
+  //     } else if (
+  //       scrollPosition >= projectSectionTop &&
+  //       scrollPosition < projectSectionBottom
+  //     ) {
+  //       setActiveSection('project');
+  //     } else {
+  //       setActiveSection(null);
+  //     }
+  //   };
+  
+  //   // Attach the event listener to the window scroll event
+  //   window.addEventListener('scroll', handleScroll);
+  
+  //   // Clean up the event listener when the component unmounts
+  //   return () => {
+  //     window.removeEventListener('scroll', handleScroll);
+  //   };
+  // }, []);
+
   return (
-    <main className="px-[5%]">
+    <main className="sm:px-[5%] ">
       <div
-        className="h-dvh w-full flex  xl:min-h-[750px] "
+      ref={homeRef}
+        className="h-[90dvh] md:h-dvh w-full flex  xl:min-h-[750px]"
         style={{
           background: "url('/assets/images/image 2.jpg') center no-repeat",
           backgroundSize: "cover",
         }}
       >
-        <div className="overlay bg-[#00000083] w-full h-full flex flex-col gap-10">
-          <Navbar />
-          <div className="flex-1 flex flex-col text-white items-center justify-center gap-14">
+        <div className="overlay bg-[#00000083] w-full h-full flex flex-col gap-4 md:gap-10">
+          <Navbar activeSection={activeSection}/>
+          <div className="flex-1 flex flex-col text-white items-center justify-center gap-4 md:gap-8 lg:gap-14">
             {/* <h4 className="uppercase text-xl mb-1 font-medium text-white text-opacity-95">
               Application Form
             </h4> */}
-            <h1 className="text-5xl uppercase font-semibold text-center w-[70%] flex gap-5 flex-col bg-gradient-to-br from-cyan-600 to-blue-600 bg-clip-text text-white mb-9">
+            <h1 className="text-3xl md:text-5xl uppercase font-semibold text-center w-[70%] flex gap-2 md:gap-5 flex-col bg-gradient-to-br from-cyan-600 to-blue-600 bg-clip-text text-white mb-4 md:mb-9">
               AMAC Area <br />
-              <span className="text-4xl">Modern Market Project</span>
+              <span className="text-xl sm:text-2xl md:text-4xl">
+                Modern Market Project
+              </span>
             </h1>
             {/* <h1 className="text-5xl uppercase font-semibold mb-2 bg-gradient-to-br from-cyan-600 to-blue-600 bg-clip-text text-transparent">
               Tido Empire International Limited
@@ -73,16 +170,28 @@ export default function Home() {
             </p> */}
             <Link
               href="https://paystack.com/pay/AMAC_Application_Form"
-              className=" w-[19%] h-[70px]  relative box-border flex items-center justify-center gap-3 text-xl bg-blue-700 rounded-md text-white  hover:border-blue-700  hover:opacity-80 send-btn"
+              className="w-[130px] h-[45px] shadow-[0_2px_2px_2px_] text-base hover:text-lg active:text-lg md:text-xl md:hover:text-2xl shadow-[#a9a9a91f] sm:shadow-none lg:w-[19%] lg:h-[70px] relative box-border flex group opacity-80  items-center justify-center gap-1 md:gap-3  bg-blue-700 rounded-md text-white  hover:border-blue-700  hover:opacity-100 send-btn"
             >
-              Get Form <span className="animate-bounce text-3xl -mb-2">↓</span>
+              Get Form{" "}
+              {/* <span className="animate-bounce text-3xl -mb-1 -rotate-[135deg]">
+                ↓
+              </span> */}
+              <FontAwesomeIcon
+                icon={faArrowRight}
+                height={20}
+                width={20}
+                className="text-base md:text-2xl -rotate-[45deg] group-hover:inline group-active:inline md:hidden"
+              />
               <span className="send-span"></span>
             </Link>
           </div>
         </div>
       </div>
 
+{/* About  */}
+      <Suspense fallback="Loading...">
       <div
+      ref={aboutRef}
         className="flex flex-col w-full about my-40 gap-40 items-center justify-center"
         id="about"
       >
@@ -113,15 +222,16 @@ export default function Home() {
             />
           </div>
         </div> */}
-        <div className="flex w-full items-center justify-center shadow-lg py-20">
-          <div className="flex flex-col gap-7  w-[80%] items-center font-inter ">
-            <h2 className=" text-black text-[60px] font-bold capitalize leading-[64px] mb-3">
+        <div className="flex w-full items-center justify-center shadow md:shadow-lg py-20">
+          <div className="flex flex-col gap-3 md:gap-5 lg:gap-7  w-[80%] items-center font-inter ">
+            <h2 className=" text-black text-4xl lg:text-6xl font-bold capitalize leading-[64px] mb-1 md:mb-3">
               About Us
             </h2>
-            <p className="text-gray-900 text-[23px] text-center font-medium leading-10 text-pretty">
+            <p className="text-gray-900 text-base leading-6 text-balance md:text-lg md:leading-8 lg:text-[23px] md:text-center font-medium lg:leading-10 md:text-pretty">
               Tido Empire registered under the corporate Affairs Commission
               (CAC) with the RC NO: 1707223 is a name synonymous with quality,
-              timely delivery and reliability with products and individuals.
+              timely delivery and reliability with products and individuals.{" "}
+              <br />
               This reputation has earned us ample experience in building
               construction, road construction, construction of Dams and
               Drainages, Erosion control works, rural electrification,
@@ -131,12 +241,12 @@ export default function Home() {
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-11 gap-4 my-32 bg-[#d1e3ff] p-[5%]">
-          <div className="flex flex-col col-span-5  gap-14 font-inter ">
-            <h2 className=" text-[#0255cc] text-[60px] font-semibold capitalize leading-[64px] mb-3">
+        <div className="grid grid-cols-5 md:grid-cols-11 gap-7 md:gap-4 my-32 bg-[#d1e3ff] p-[5%]">
+          <div className="flex flex-col col-span-5 gap-5 md:gap-8  lg:gap-14 font-inter ">
+            <h2 className=" text-[#0255cc] text-[21px] md:text-4xl lg:text-6xl font-semibold capitalize leading-7 md:leading-10 lg:leading-[64px] mb-1 md:mb-3">
               Our Vision
             </h2>
-            <p className="text-gray-900 text-[23px] leading-10 text-pretty">
+            <p className="text-gray-900 text-sm leading-6 text-balance md:text-lg md:leading-8 lg:text-[23px] break-words lg:leading-10 md:text-pretty">
               As a wholly indigenous company, we are desirous to take the
               construction industry of Nigeria to level compatible with what
               obtain elsewhere in the world. We are poise to towering high above
@@ -144,14 +254,14 @@ export default function Home() {
               beauty, quality and excellence we have recorded over the years.
             </p>
           </div>
-          <div className="flex items-center justify-center">
-            <hr className="w-1 self-center h-full bg-black bg-opacity-25" />
+          <div className="items-center justify-center flex bg-transparent col-span-5 md:col-span-1">
+            <hr className="w-full h-0.5 md:w-1 self-center md:h-full bg-black/ md:bg-opacity-30" />
           </div>
-          <div className="flex flex-col  gap-14 font-inter col-span-5">
-            <h2 className="text-[#0255cc] text-[60px] font-semibold capitalize leading-[64px] mb-3 self-end">
+          <div className="flex flex-col  gap-5 md:gap-8  lg:gap-14 font-inter col-span-5">
+            <h2 className="text-[#0255cc] text-[21px] md:text-4xl lg:text-6xl font-semibold capitalize leading-7 md:leading-10 lg:leading-[64px] mb-1 md:mb-3 self-end">
               Our Strength
             </h2>
-            <p className="text-gray-900 text-[23px]  leading-10 break-words">
+            <p className="text-gray-900 text-sm leading-6 text-balance md:text-lg md:leading-8 lg:text-[23px] break-words lg:leading-10 md:text-pretty">
               Professionalism remains our hallmark. The Company is surrounded
               with a cream of highly talented and equipped staff that are
               endowed with the needed expertise and fueled by the drive to
@@ -163,17 +273,21 @@ export default function Home() {
           </div>
         </div>
       </div>
+      </Suspense>
 
+{/* Project  */}
+      <Suspense fallback="Loading...">
       <div
+      ref={projectRef}
         className="flex flex-col w-full about my-40 gap-40 items-center justify-center"
         id="project"
       >
-        <div className="flex w-full items-center justify-center shadow-inner  py-20">
+        <div className="flex w-full items-center justify-center shadow-inner py-20">
           <div className="flex flex-col gap-9  w-[80%] items-center font-inter relative">
-            <h2 className=" text-black text-[60px] font-bold capitalize leading-[64px] mb-3 ">
+            <h2 className=" text-black text-4xl lg:text-6xl font-bold capitalize leading-[64px] mb-1 md:mb-3 ">
               Project
             </h2>
-            <p className="text-gray-900 text-[23px] text-center font-medium leading-10">
+            <p className="text-gray-900 text-base leading-6 text-balance md:text-lg md:leading-8 lg:text-[23px] md:text-center font-medium lg:leading-10 md:text-pretty">
               Dear valued stakeholders, We are excited to announce that Tido
               Empire International Limited has been awarded the contract to
               develop a modern market in the AMAC area council. This project is
@@ -186,7 +300,7 @@ export default function Home() {
               onMouseEnter={handleProjectHoverIn}
               onMouseOut={handleProjectHoverOut}
               onClick={displayLetter}
-              className=" w-[13%] h-[60px] flex items-center font-medium justify-center bg-blue-700 rounded-md text-white hover:border-2 hover:border-blue-700 hover:bg-transparent hover:text-blue-700 hover:opacity-80 "
+              className="w-[130px] h-[45px] lg:w-[16%] lg:h-[60px] flex items-center font-medium justify-center bg-blue-700 rounded-md text-white hover:border-2 hover:border-blue-700 hover:bg-transparent hover:text-blue-700 hover:opacity-80 active:border-blue-700 active:bg-transparent active:text-blue-700"
             >
               {projectButtonText}
             </button>
@@ -197,9 +311,9 @@ export default function Home() {
                 letterVisible ? "flex showUp_animate" : "hidden "
               }`}
             >
-              <div className="size-full py-[5%] px-[10%] flex relative items-center justify-center overflow-auto ">
+              <div className="size-full py-[9%] px-[10%] flex relative items-center justify-center overflow-auto ">
                 <div
-                  className="absolute flex items-center justify-center top-4 right-7 text-5xl cursor-pointer hover:opacity-80"
+                  className="fixed flex items-center justify-center top-1 right-9 md:top-4 md:right-7 text-3xl md:text-5xl cursor-pointer hover:opacity-80"
                   title="close"
                 >
                   <FontAwesomeIcon
@@ -210,22 +324,22 @@ export default function Home() {
                   />
                 </div>
                 <div
-                  className={`letter size-full flex flex-col  font-poppins gap-6`}
+                  className={`letter size-full flex flex-col font-poppins gap-6`}
                 >
-                  <h4 className="text-white text-xl leading-10 font-medium capitalize mb-3">
+                  <h4 className="text-white text-lg md:text-xl leading-6 md:leading-10 font-medium capitalize mb-1 md:mb-3">
                     Dear valued stakeholders,
                   </h4>
-                  <p className="text-white text-base leading-7 whitespace-break-spaces">
+                  <p className="text-white text-sm md:text-base leading-6 md:leading-7 whitespace-break-spaces">
                     We are excited to announce that Tido Empire International
                     Limited has been awarded the contract to develop a modern
                     market in the AMAC area council. This project is not just
-                    about building a market, it&apos;s about creating a sustainable
-                    future for generations to come.
+                    about building a market, it&apos;s about creating a
+                    sustainable future for generations to come.
                   </p>
-                  <h6 className="text-white text-lg leading-7 font-medium mb-2">
+                  <h6 className="text-white text-base md:text-lg leading-7 font-medium mb-1 md:mb-2">
                     The Need for a Modern Market
                   </h6>
-                  <p className="text-white text-base leading-7 whitespace-break-spaces">
+                  <p className="text-white text-sm md:text-base leading-6 md:leading-7 whitespace-break-spaces">
                     The existing market in the AMAC area council has served its
                     purpose, but it&apos;s time for a change. We believe that a
                     modern, fully-equipped, functional ultra-modern market of
@@ -235,10 +349,10 @@ export default function Home() {
                     attract investors and create huge potentials aligned with
                     global best practices.
                   </p>
-                  <h6 className="text-white text-lg leading-7 font-medium mb-2">
+                  <h6 className="text-white text-base md:text-lg leading-7 font-medium mb-1 md:mb-2">
                     Our Vision for Sustainable Development
                   </h6>
-                  <p className="text-white text-base leading-7 whitespace-break-spaces">
+                  <p className="text-white text-sm md:text-base leading-6 md:leading-7  whitespace-break-spaces">
                     This project is inspired by the need to chart a new course
                     for sustainable development in the AMAC area council. We aim
                     to mobilize resources for the development of critical and
@@ -247,10 +361,10 @@ export default function Home() {
                     local economy, create jobs, and deliver the dividends of
                     democracy.
                   </p>
-                  <h6 className="text-white text-lg leading-7 font-medium mb-2">
+                  <h6 className="text-white text-base md:text-lg leading-3 md:leading-7 font-medium mb-1 md:mb-2">
                     Our Capabilities
                   </h6>
-                  <p className="text-white text-base leading-7 whitespace-break-spaces">
+                  <p className="text-white text-sm md:text-base leading-6 md:leading-7 whitespace-break-spaces">
                     Tido Empire International Limited is competently ready,
                     financially capable, adequately equipped, and professionally
                     qualified to carry out this development project. We will
@@ -259,10 +373,10 @@ export default function Home() {
                     most pressing financial and developmental challenges within
                     the council.
                   </p>
-                  <h6 className="text-white text-lg leading-7 font-medium mb-2">
+                  <h6 className="text-white text-base md:text-lg leading-7 font-medium mb-1 md:mb-2">
                     The Benefits
                   </h6>
-                  <div className="text-white text-base leading-7 whitespace-break-spaces">
+                  <div className="text-white text-sm md:text-base leading-6 md:leading-7 whitespace-break-spaces">
                     <p>
                       This project will not only benefit the AMAC area council
                       but also the entire community. <br />
@@ -280,21 +394,21 @@ export default function Home() {
                       </li>
                     </ul>
                   </div>
-                  <h6 className="text-white text-lg leading-7 font-medium mb-2">
+                  <h6 className="text-white text-base md:text-lg leading-7 font-medium mb-1 md:mb-2">
                     Conclusion
                   </h6>
-                  <p className="text-white text-base leading-7 whitespace-break-spaces">
+                  <p className="text-white text-sm md:text-base leading-6 md:leading-7 whitespace-break-spaces">
                     We take this project seriously, and we are committed to
                     delivering a modern market that will stand the test of time.
                     We believe that this project will not only transform the
                     AMAC area council but also set a new standard for
                     sustainable development in Nigeria.
                   </p>
-                  <p className="text-white text-base leading-7 whitespace-break-spaces">
+                  <p className="text-white text-sm md:text-base leading-6 md:leading-7 whitespace-break-spaces">
                     Thank you for your support, and we look forward to working
                     with you to make this vision a reality.
                   </p>
-                  <address className="text-white text-base leading-8 mt-2">
+                  <address className="text-white text-sm md:text-base leading-7 md:leading-8 mt-2 mb-1">
                     Sincerely, <br />
                     Engr. Ebuka Sandra Ughasoro <br />
                     Executive Chairman, Tido Empire International Limited
@@ -306,21 +420,31 @@ export default function Home() {
           </div>
         </div>
         <div className="flex flex-col gap-9  w-full items-center font-inter relative">
-          <h3 className=" text-black text-[40px] font-semibold capitalize leading-[64px] mb-2 ">
+          <h3 className=" text-black text-base text-center md:text-[40px] font-semibold capitalize leading-8 md:leading-[64px] mb-2 ">
             ARCHITECTURAL DESIGN OF GIDAN DAYA
           </h3>
-          <p className="text-gray-900 text-opacity-80 text-[17px] text-center font-medium leading-5 w-[50%] text-pretty">
+          <p className="text-gray-900 text-opacity-80 text-[13px] md:text-[17px] text-center font-medium leading-5 w-[80%] md:w-[50%] text-pretty">
             Having considered the challenges faced by this communities, Tido
             Empire has come up with this modern architectural design for the
             people of Gidan Daya Communities.
           </p>
-          <div className="mt-14 h-[680px] w-[90%] overflow-clip max-md:w-full border-2 flex items-center justify-center border-sky-600 rounded-2xl">
-            <Carousel autoSlide={true} key={`Carousel_${uuidv4()}`} />
+          <div className="mt-7 md:mt-14 h-[200px] md:h-[400px] lg:h-[680px] w-[90%] overflow-clip max-md:w-full border-2 flex items-center justify-center border-sky-600 rounded-2xl">
+            <Carousel autoSlide={true}  />
           </div>
         </div>
       </div>
+      </Suspense>
 
-      <footer className="my-9 w-full flex flex-col items-center text-center font-semibold">
+      {/* Back to Top  */}
+      <button
+        className="fixed bottom-5 right-2 md:right-5 size-11 p-3  md:p-7 cursor-pointer text-white rounded-full bg-blue-600/70 opacity-70 hover:opacity-100 hover:bg-blue-600/90 backdrop-blur flex items-center justify-center text-base md:text-2xl"
+        onClick={scrollToTop}
+        title="Back to top"
+      >
+        <FontAwesomeIcon icon={faArrowUp} />
+      </button>
+
+      <footer className="my-9 w-full text-sm flex flex-col items-center text-center font-semibold md:text-base">
         Made with ❤️ by Afripul Group &copy; {currentYear}
       </footer>
     </main>

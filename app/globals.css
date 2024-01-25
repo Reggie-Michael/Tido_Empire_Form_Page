@@ -79,15 +79,26 @@
 
 .showUp_animate2 {
   scale: 0;
-  opacity: 0;
-  animation: showUp 1s ease forwards;
-  animation-delay: -200ms;
+  opacity: 1;
+  animation: showUp2 1s ease forwards;
+  animation-delay: -400ms;
 }
 
 @keyframes showUp {
   from{
     scale: 0;
     opacity: 0;
+  }
+  to {
+    scale: 1;
+    opacity: 1;
+  }
+}
+
+@keyframes showUp2 {
+  from{
+    scale: 0;
+    opacity: 1;
   }
   to {
     scale: 1;
