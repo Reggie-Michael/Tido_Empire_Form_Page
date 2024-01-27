@@ -8,7 +8,7 @@ import { useState } from "react";
 // import React from "react";
 import { v4 as uuidv4 } from "uuid";
 
-const Navbar = ({ activeSection }) => {
+const Navbar = ({ activeSection, className }) => {
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
   const isActive = (path) => pathname === path;
@@ -24,7 +24,7 @@ const Navbar = ({ activeSection }) => {
       path === "/" ? path : `/#${label.toLowerCase().replace(" ", "-")}`;
 
     return (
-      <li className="flex gap-2 flex-center items-center text-lg md:text-base lg:text-xl opacity-85 hover:text-blue-600">
+      <li className="flex gap-2 flex-center items-center text-lg md:text-base lg:text-xl opacity-85 hover:text-blue-600 nav-link">
         <Link
           href={linkPath}
           className={`${
@@ -39,7 +39,7 @@ const Navbar = ({ activeSection }) => {
     );
   };
   return (
-    <header className="w-full flex justify-between items-center px-[5%] box-border py-5 z-10 backdrop-blur-0 relative bg-white sm:bg-transparent">
+    <header className={`w-full flex justify-between items-center px-[5%] box-border py-5 z-10 backdrop-blur-0 relative bg-white sm:bg-transparent ${className}`}>
       <Link
         href="/"
         className="logo flex items-center font-inter text-xl lg:text-3xl font-bold text-white hover:opacity-75"

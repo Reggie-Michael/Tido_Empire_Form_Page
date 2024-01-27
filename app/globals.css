@@ -5,6 +5,16 @@
 @tailwind components;
 @tailwind utilities;
 
+
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+header.text-black .logo,
+header.text-black ul li.nav-link {
+  color: black;
+
+}
 .send-btn {
   border: none;
   overflow: hidden;
@@ -83,6 +93,8 @@
   animation: showUp2 1s ease forwards;
   animation-delay: -400ms;
 }
+
+
 
 @keyframes showUp {
   from{

@@ -255,7 +255,7 @@ export default function Home() {
             </p>
           </div>
           <div className="items-center justify-center flex bg-transparent col-span-5 md:col-span-1">
-            <hr className="w-full h-0.5 md:w-1 self-center md:h-full bg-black/ md:bg-opacity-30" />
+            <hr className="w-full h-0.5 md:w-1 self-center md:h-full bg-black/80 md:bg-opacity-30" />
           </div>
           <div className="flex flex-col  gap-5 md:gap-8  lg:gap-14 font-inter col-span-5">
             <h2 className="text-[#0255cc] text-[21px] md:text-4xl lg:text-6xl font-semibold capitalize leading-7 md:leading-10 lg:leading-[64px] mb-1 md:mb-3 self-end">
