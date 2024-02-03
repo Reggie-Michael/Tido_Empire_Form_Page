@@ -1,33 +1,63 @@
-// import mongoose from "mongoose";
 import { Schema, model, models } from "mongoose";
 
 const AgentSchema = new Schema({
+  mainName: {
+    type: String,
+    required: [true, "Main Name is required!"],
+  },
+  otherName: {
+    type: String,
+    required: function () {
+      return this.agency === "individual";
+    },
+  },
+  agency: {
+    type: String,
+    required: [true, "Agency is required!"],
+    validate: {
+      validator: function (v) {
+        return v === "individual" || v === "company";
+      },
+      message: "Agency must be 'individual' or 'company'",
+    },
+  },
   email: {
     type: String,
-    unique: [true, "Email already exists!"],
     required: [true, "Email is required!"],
+    unique: true,
   },
-  username: {
+  phoneNumber: {
     type: String,
-    required: [true, "Username is required!"],
-    match: [
-      /^(?=.{8,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$/,
-      "Username invalid, it should contain 8-20 alphanumeric letters and be unique!",
-    ],
+    required: [true, "Phone Number is required!"],
+    unique: true,
   },
+  address: String,
+  cacNo: {
+    type: String,
+    required: function () {
+      return this.agency === "company";
+    },
+    unique: true,
+  },
+  image: String,
   referral: {
     type: String,
-    unique: [true, "Referral already exists!"],
-    required: [true, "Referral Number is required!"],
+    default: "admin1234",
+    unique: true,
   },
   referredData: [{
     type: Schema.Types.ObjectId,
-    ref: 'Customer'
-}],
-referredLength: {
-  type: Number,
-  default: 0
-}
+    ref: "Customer",
+  }],
+  referredLength: {
+    type: Number,
+    default: 0,
+  },
+  creationDate: {
+    type: Date,
+    default: Date.now,
+    required: true,
+  },
 });
 
 const Agent = models.Agent || model("Agent", AgentSchema);

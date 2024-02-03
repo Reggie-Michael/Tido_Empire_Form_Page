@@ -23,7 +23,6 @@ const Carousel = ({ autoSlide = false, autoSlideInterval = 2000 }) => {
   const [buttonHovered, setButtonHovered] = useState(false);
   const [appearClass, setAppearClass] = useState(false);
 
-  console.log(appearClass);
   const handleClassAppear = () => {
     if (isHovered && buttonHovered) {
       // setAppearClass();

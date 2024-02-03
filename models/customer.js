@@ -21,6 +21,14 @@ const CustomerSchema = new Schema({
       "Last Name invalid, it should contain 2-20 letters!",
     ],
   },
+  phoneNumber: {
+    type: String,
+    required: [true, "Phone Number is required!"],
+  },
+  email: {
+    type: String,
+    required: [true, "Email is required!"],
+  },
   referenceNumber: {
     type: String,
     required: [true, "Purchase Reference Number is required"],
@@ -29,6 +37,7 @@ const CustomerSchema = new Schema({
   purchaseDate: {
     type: Date,
     required: [true, "Purchase Date is required."],
+    default: Date.now,
   },
 });
 

@@ -8,7 +8,7 @@ import { useState } from "react";
 // import React from "react";
 import { v4 as uuidv4 } from "uuid";
 
-const Navbar = ({ activeSection, className, actionLink }) => {
+const Navbar = ({ activeSection, className }) => {
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
   const isActive = (path) => pathname === path;
@@ -39,12 +39,10 @@ const Navbar = ({ activeSection, className, actionLink }) => {
     );
   };
   return (
-    <header
-      className={`w-full flex justify-between items-center px-[5%] box-border py-5 z-10 backdrop-blur-0 relative bg-white sm:bg-transparent ${className}`}
-    >
+    <header className={`w-full flex justify-between items-center px-[5%] box-border py-5 z-10 backdrop-blur-0 relative bg-white sm:bg-transparent ${className}`}>
       <Link
         href="/"
-        className="logo flex items-center font-inter text-xl lg:text-3xl font-bold text-black sm:text-white hover:opacity-75"
+        className="logo flex items-center font-inter text-xl lg:text-3xl font-bold text-white hover:opacity-75"
       >
         {/* <Image
           src={"/assets/images/LOGO-writeup-1-White 1.svg"}
@@ -57,19 +55,17 @@ const Navbar = ({ activeSection, className, actionLink }) => {
       </Link>
 
       <nav className="flex text-white items-center font-inter justify-end">
-        <ul className="hidden gap-7 items-center sm:flex text-black sm:text-white">
+        <ul className="hidden gap-7 items-center sm:flex ">
           {navigationItems.map((item) => (
             <NavLink key={`${item.path} ${uuidv4()}`} {...item} />
           ))}
           <li>
-            {actionLink || (
-              <Link
-                href="https://paystack.com/pay/AMAC_Application_Form"
-                className="w-[65px] h-[30px] md:w-[90px] md:h-[40px] text-xs lg:text-base flex items-center justify-center bg-blue-700 rounded-md hover:border-2 hover:border-blue-700 hover:bg-transparent hover:opacity-80 "
-              >
-                Get Form
-              </Link>
-            )}
+            <Link
+              href="https://paystack.com/pay/AMAC_Application_Form"
+              className="w-[65px] h-[30px] md:w-[90px] md:h-[40px] text-xs lg:text-base flex items-center justify-center bg-blue-700 rounded-md text-white hover:border-2 hover:border-blue-700 hover:bg-transparent hover:opacity-80 "
+            >
+              Get Form
+            </Link>
           </li>
         </ul>
         {/* Mobile Nav  */}
@@ -79,12 +75,12 @@ const Navbar = ({ activeSection, className, actionLink }) => {
           onClick={() => {
             setNavOpen(!navOpen);
           }}
-          className={`sm:hidden inline hover:opacity-100 z-10 text-black/90  ${
-            navOpen ? "text-2xl opacity-100" : "text-xl opacity-75"
+          className={`sm:hidden inline hover:opacity-100 z-10 ${
+            navOpen ? "text-2xl opacity-100" : "text-xl opacity-75 "
           }`}
         />
         {navOpen && (
-          <div className="absolute bg-white shadow-inner left-0 w-full h-fit py-3 text-black  translate-y-[65%] sm:hidden">
+          <div className="absolute bg-white shadow-inner left-0 w-full h-fit py-3  translate-y-[65%] sm:hidden">
             <ul className="gap-2 flex flex-col">
               {navigationItems.map((item) => (
                 <div
@@ -99,14 +95,12 @@ const Navbar = ({ activeSection, className, actionLink }) => {
                 </div>
               ))}
               <li className="px-[2%]">
-                {actionLink || (
-                  <Link
-                    href="https://paystack.com/pay/AMAC_Application_Form"
-                    className=" w-full h-[40px] flex items-center justify-center text-sm font-medium bg-blue-700 rounded-md text-white hover:border-2 hover:border-blue-700 hover:bg-transparent hover:opacity-80 "
-                  >
-                    Get Form
-                  </Link>
-                )}
+                <Link
+                  href="https://paystack.com/pay/AMAC_Application_Form"
+                  className=" w-full h-[40px] flex items-center justify-center text-sm font-medium bg-blue-700 rounded-md text-white hover:border-2 hover:border-blue-700 hover:bg-transparent hover:opacity-80 "
+                >
+                  Get Form
+                </Link>
               </li>
             </ul>
           </div>

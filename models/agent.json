@@ -1,0 +1,50 @@
+{
+  "mainName": {
+    "type": "String",
+    "required": true
+  },
+  "otherName": {
+    "type": "String"
+  },
+  "agency": {
+    "type": "String",
+    "enum": ["individual", "company"],
+    "required": true
+  },
+  "email": {
+    "type": "String",
+    "required": true,
+    "unique": true
+  },
+  "phoneNumber": {
+    "type": "String",
+    "required": true,
+    "unique": true
+  },
+  "address": "String",
+  "cacNo": {
+    "type": "String",
+    "required": true
+  },
+  "image": "String",
+  "referral": {
+    "type": "String",
+    "default": "admin1234",
+    "unique": true
+  },
+  "referredData": [
+    {
+      "type": "ObjectId",
+      "ref": "Customer"
+    }
+  ],
+  "referredLength": {
+    "type": "Number",
+    "default": 0
+  },
+  "creationDate": {
+    "type": "Date",
+    "default": "Date.now",
+    "required": true
+  }
+}

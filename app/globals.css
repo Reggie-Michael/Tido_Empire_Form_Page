@@ -10,10 +10,24 @@ input::-ms-reveal,
 input::-ms-clear {
   display: none;
 }
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
 header.text-black .logo,
 header.text-black ul li.nav-link {
   color: black;
-
+}
+header.text-black .logo:hover,
+header.text-black ul li.nav-link:hover {
+  @apply text-blue-600;
 }
 .send-btn {
   border: none;

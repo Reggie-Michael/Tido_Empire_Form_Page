@@ -8,9 +8,6 @@ import Navbar from "@/components/Navbar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faInfo } from "@fortawesome/free-solid-svg-icons";
 import Image from "next/image";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import ConfirmationMessage from "@/components/Confirmation";
 
 export default function Login() {
   const router = useRouter();
@@ -57,7 +54,6 @@ export default function Login() {
       state: false,
       type: "",
     },
-    maxTriesOverlapped: false,
     // keyAbsent: false,
     // for when email verification code is expired or wrong
     inValidVerification: {
@@ -81,58 +77,14 @@ export default function Login() {
   const agentMode = searchParams.get("agency");
   const errorStatus = searchParams.get("errorStatus");
 
-  const notify = (val) =>
-    toast.success(
-      val || (
-        <>
-          "Successfully Submitted Form" <br /> Thank you
-        </>
-      ),
-      {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-        className: "text-lg break-all w-[400px]",
-        //  transition: Bounce,
-      }
-    );
-
-  const warn = (val) =>
-    toast.error(val, {
-      position: "top-center",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "dark",
-      className: "text-lg break-all  w-[400px]",
-      //  transition: Bounce,
-    });
-
   const errorMessage = () => {
     const errors = [];
     if (error.errorState) {
       if (error.invalidAgency) {
         errors.push("The Agency is not valid. Please select valid Agency");
       }
-      if (error.maxTriesOverlapped) {
-        errors.push(
-          "Number of Allocated Tries in 30 minutes overlapped. Try again in 30 minutes."
-        );
-      }
       if (error.invalidInput.state) {
         const invalidInput = error.invalidInput.type;
-        if (invalidInput === "nameExist")
-          errors.push(
-            "Agent Name Already Exist, Please Try again or contact Tido Empire if you forgot Account Details"
-          );
         if (invalidInput === "companyExist")
           errors.push(
             "Company Name Already Exist, Please Try again or contact Tido Empire if you forgot Account Details"
@@ -156,24 +108,23 @@ export default function Login() {
       if (error.inputNull.state) {
         const inputNull = error.inputNull.type;
         const nameValue = agency === "company" ? "Company" : "First";
-        console.log("nameValue", nameValue);
         if (inputNull === "fNameNull")
           errors.push(
             `${nameValue} Name cannot be null! Please Input ${nameValue} name.`
           );
-        if (readyForVerification.lName && inputNull === "lNameNull")
+        if (inputNull === "lNameNull")
           errors.push("Last Name cannot be null! Please input Last name");
-        if (readyForVerification.email && inputNull === "emailNull")
+        if (inputNull === "emailNull")
           errors.push("Email cannot be null! Please input email");
-        if (readyForVerification.pNumber && inputNull === "pNumberNull")
+        if (inputNull === "pNumberNull")
           errors.push("Phone Number cannot be null! Please input Phone Number");
-        if (readyForVerification.cacNo && inputNull === "cacNoNull")
+        if (inputNull === "cacNoNull")
           errors.push(
             "Company CaC Number cannot be null! Please input CaC number"
           );
-        if (readyForVerification.address && inputNull === "addressNull")
+        if (inputNull === "addressNull")
           errors.push("Company Address cannot be null! Please input Address");
-        if (readyForVerification.image && inputNull === "imageNull")
+        if (inputNull === "imageNull")
           errors.push(
             `${
               agency == "company" ? "Company Logo" : "Agent Image"
@@ -193,10 +144,8 @@ export default function Login() {
       }
       if (error.validateError.state) {
         const validateError = error.validateError.type;
-        const nameValue = agency === "company" ? "Company" : "First";
-
         if (validateError == "fNameValidateError")
-          errors.push(`${nameValue} Name must contain only letters.`);
+          errors.push("First Name must contain only letters.");
         if (validateError == "lNameValidateError")
           errors.push("Last Name must contain only letters.");
         if (validateError == "emailValidateError")
@@ -218,14 +167,9 @@ export default function Login() {
       }
       if (error.minMaxInvalid.state) {
         const minMaxInvalid = error.minMaxInvalid.type;
-        const nameValue = agency === "company" ? "Company" : "First";
         if (minMaxInvalid == "fNameVoidCharLength")
           errors.push(
-            `${nameValue} Name must be between ${
-              agency === "company" ? companyNameMinLength : nameMinLength
-            } and ${
-              agency === "company" ? companyNameMaxLength : nameMaxLength
-            }.`
+            `First Name must be between ${nameMinLength} and ${nameMaxLength}.`
           );
         if (minMaxInvalid == "lNameVoidCharLength")
           errors.push(
@@ -243,6 +187,7 @@ export default function Login() {
         // if(minMaxInvalid == "addressVoidCharLength")errors.push"Address  should only contain Alphanumeric Letter (spaces, +, - and @ are permitted)."
         if (minMaxInvalid == "imageTooLarge")
           errors.push(`Image is too Large! Max image size is 5MB`);
+
       }
       // errors.push("Please try again later");
     }
@@ -262,17 +207,17 @@ export default function Login() {
       }));
     } else if (typeof val === "object" && val !== null) {
       const errorType = val?.error;
-      console.log("From setErrorStatus: ErrorType", errorType);
+    console.log("From setErrorStatus: ErrorType", errorType);
 
-      setError((prev) => ({
-        ...prev, // Spread the previous state
-        errorState: true, // Set common error state to true
-        // Set specific error based on val
-        [errorType]: {
-          state: true,
-          type: val?.type,
-        },
-      }));
+        setError((prev) => ({
+          ...prev, // Spread the previous state
+          errorState: true, // Set common error state to true
+          // Set specific error based on val
+          [errorType]: {
+            state: true,
+            type: val?.type,
+          },
+        }));
     }
   };
 
@@ -293,40 +238,18 @@ export default function Login() {
     const file = e.target.files[0];
     // Clears image preview and input value on change
     setImagePreview(null);
-    // setInputValues((prev) => ({
-    //   ...prev,
-    //   image: null,
-    // }));
-    setError((prev) => ({
+    setInputValues((prev) => ({
       ...prev,
-      errorState: false,
-      invalidAgency: false,
-      inputNull: {
-        state: false,
-        type: "",
-      },
-      minMaxInvalid: {
-        state: false,
-        type: "",
-      },
-      validateError: {
-        state: false,
-        type: "",
-      },
+      image: null,
     }));
-    readyForVerification.image !== true &&
-      setReadyForVerification((prev) => ({
-        ...prev,
-        image: true,
-      }));
 
     // Perform validation checks
     const validationMessage = validateImage(file);
     if (validationMessage !== "passImageCheck") {
-      setErrorStatus(validationMessage);
+      setError(validationMessage);
       return;
     }
-    console.log("setting image");
+
     // If all validation checks pass, set the selected file and display image preview
     const reader = new FileReader();
     reader.onload = () => {
@@ -344,7 +267,7 @@ export default function Login() {
   const isWithinLengthRange = (str, minLength, maxLength) =>
     str.length >= minLength && str.length <= maxLength;
 
-  const validateMainName = (name) => {
+  const validateName = (firstName, lastNamePresent, lastName) => {
     const minLength =
       agency === "company" ? companyNameMinLength : nameMinLength;
     const maxLength =
@@ -353,36 +276,31 @@ export default function Login() {
 
     let message = null;
 
-    if (!name) {
+    if (!firstName) {
       message = { error: "inputNull", type: "fNameNull" };
-    } else if (!isValidExpression(name, nameRegex)) {
+    } else if (!isValidExpression(firstName, nameRegex)) {
       message = { error: "validateError", type: "fNameValidateError" };
-    } else if (!isWithinLengthRange(name, minLength, maxLength)) {
+    } else if (!isWithinLengthRange(firstName, minLength, maxLength)) {
       message = { error: "minMaxInvalid", type: "fNameVoidCharLength" };
     }
 
-    return message ? message : "passFNameCheck";
-  };
-  const validateOtherName = (name) => {
-    const minLength = nameMinLength;
-    const maxLength = nameMaxLength;
-    const nameRegex = /^[a-zA-Z ]+$/;
-
-    let message = null;
-    if (agency !== "company") {
-      if (!name) {
-        message = { error: "inputNull", type: "lNameNull" };
-      } else if (!isValidExpression(name, nameRegex)) {
-        message = { error: "validateError", type: "lNameValidateError" };
-      } else if (!isWithinLengthRange(name, minLength, maxLength)) {
-        message = { error: "minMaxInvalid", type: "lNameVoidCharLength" };
-      }
+    if (lastNamePresent && !lastName) {
+      message = { error: "inputNull", type: "lNameNull" };
+    } else if (lastNamePresent && !isValidExpression(lastName, nameRegex)) {
+      message = { error: "validateError", type: "lNameValidateError" };
+    } else if (
+      lastNamePresent &&
+      !isWithinLengthRange(lastName, minLength, maxLength)
+    ) {
+      message = { error: "minMaxInvalid", type: "lNameVoidCharLength" };
     }
 
-    return message ? message : "passLNameCheck";
+    return message ? message : "passNameCheck";
   };
+
+  
   const validateEmail = (email) => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/i;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!email) {
       return { error: "inputNull", type: "emailNull" };
@@ -399,12 +317,9 @@ export default function Login() {
     const numberRegex = /^[0-9\+\-\ ]+$/;
     const cacNoRegex = /^[0-9 ]+$/;
 
-    console.log(phoneNumber);
-    console.log("pNumber ready for val", readyForVerification.pNumber);
-    console.log(cacNoPresent);
+    console.log(typeof phoneNumber)
     let message = null;
 
-    console.log("phone number", !phoneNumber);
     if (!phoneNumber) {
       message = { error: "inputNull", type: "pNumberNull" };
     } else if (!isValidExpression(phoneNumber, numberRegex)) {
@@ -424,7 +339,6 @@ export default function Login() {
       message = { error: "minMaxInvalid", type: "cacNoVoidCharLength" };
     }
 
-    console.log("from number val", message);
     return message ? message : "passNumbersCheck";
   };
 
@@ -442,7 +356,6 @@ export default function Login() {
 
   const validateImage = (image) => {
     if (image) {
-      console.log(image);
       const allowedImageTypes = ["jpg", "jpeg", "png"];
 
       const isAllowedImageType = (file) => {
@@ -467,7 +380,6 @@ export default function Login() {
       // Check file size (max 5MB)
       const maxSize = 5 * 1024 * 1024; // 5MB
       if (image.size > maxSize) {
-        console.log(image.size);
         // setError((prev) => ({
         //   ...prev,
         //   minMaxInvalid: {
@@ -490,8 +402,7 @@ export default function Login() {
       // };
       // img.src = URL.createObjectURL(file);
     } else {
-      const message = { error: "inputNull", type: "imageNull" };
-      setImagePreview(null);
+      const message = { error: "minMaxInvalid", type: "imageTooLarge" };
       return message;
     }
     return "passImageCheck";
@@ -499,7 +410,7 @@ export default function Login() {
 
   const validateInputs = useCallback(() => {
     let allInputsValid = true;
-    console.log("From validationCallback: Starting Validation");
+    console.log("From validationCallback: Starting Validation")
 
     // Check if agency is missing or invalid
     if (!agency || (agency !== "individual" && agency !== "company")) {
@@ -513,33 +424,35 @@ export default function Login() {
 
     // Validate based on agency type
 
-    console.log("From validationCallback: Starting Name Validation");
-
-    if (readyForVerification.companyName || readyForVerification.fName) {
-      console.log(
-        "From validationCallback: First Name is ready for validation"
-      );
-
-      const checkVal =
-        agency === "company" ? inputValues.companyName : inputValues.fName;
-      const validateMessage = validateMainName(checkVal);
-      console.log("Form validation callback: ", validateMessage);
-      if (validateMessage !== "passFNameCheck") {
-        setErrorStatus(validateMessage);
-        allInputsValid = false;
+    console.log("From validationCallback: Starting Name Validation")
+    
+    if (agency === "company") {
+      console.log("From validationCallback: Agency is Company")
+      if (readyForVerification.companyName) {
+        console.log("From validationCallback: company Name is ready for validation")
+        const validateMessage = validateName(inputValues.companyName, false);
+        console.log("Form validation callback: ", validateMessage)
+        if (validateMessage !== "passNameCheck") {
+          setErrorStatus(validateMessage);
+          allInputsValid = false;
+        }
       }
-    }
+    } else {
+      console.log("From validationCallback: Agency is not Company")
 
-    if (agency !== "company" && readyForVerification.lName) {
-      console.log(
-        "From validationCallback:  Last Name is ready for validation"
-      );
+      if (readyForVerification.fName && readyForVerification.lName) {
+        console.log("From validationCallback: First Name and Last Name is ready for validation")
 
-      const validateMessage = validateOtherName(inputValues.lName);
-      console.log("Form validation callback: ", validateMessage);
-      if (validateMessage !== "passLNameCheck") {
-        setErrorStatus(validateMessage);
-        allInputsValid = false;
+        const validateMessage = validateName(
+          inputValues.fName,
+          true,
+          inputValues.lName
+          );
+          console.log("Form validation callback: ", validateMessage)
+        if (validateMessage !== "passNameCheck") {
+          setErrorStatus(validateMessage);
+          allInputsValid = false;
+        }
       }
     }
 
@@ -554,11 +467,10 @@ export default function Login() {
 
     // Validate phone number and CAC number
     if (agency === "company") {
-      console.log("From validationCallback: Agency is Company");
-      if (readyForVerification.pNumber && readyForVerification.cacNo) {
-        console.log(
-          "From validationCallback: Company Number and Cac is ready for validation"
-        );
+      console.log("From validationCallback: Agency is Company")
+      if (readyForVerification.pNumber &&
+        readyForVerification.cacNo) {
+        console.log("From validationCallback: Company Number and Cac is ready for validation")
         const numbersValidationMessage = validateNumbers(
           inputValues.pNumber,
           inputValues.cacNo,
@@ -570,39 +482,28 @@ export default function Login() {
         }
       }
     } else {
-      console.log("From validationCallback: Agency is not Company");
+      console.log("From validationCallback: Agency is not Company")
 
       if (readyForVerification.pNumber) {
-        console.log(
-          "From validationCallback: Phone Number is ready for validation"
-        );
+        console.log("From validationCallback: Phone Number is ready for validation")
 
         const numbersValidationMessage = validateNumbers(
           inputValues.pNumber,
           inputValues.cacNo,
           agency === "company"
         );
-        console.log("numbersValidationMessage", numbersValidationMessage);
         if (numbersValidationMessage !== "passNumbersCheck") {
           setErrorStatus(numbersValidationMessage);
           allInputsValid = false;
         }
       }
     }
-
+   
     // Validate address
     if (readyForVerification.address) {
       const addressValidationMessage = validateAddress(inputValues.address);
       if (addressValidationMessage !== "passAddressCheck") {
         setErrorStatus(addressValidationMessage);
-        allInputsValid = false;
-      }
-    }
-
-    if (readyForVerification.image) {
-      const validationMessage = validateImage(inputValues.image);
-      if (validationMessage !== "passImageCheck") {
-        setErrorStatus(validationMessage);
         allInputsValid = false;
       }
     }
@@ -634,82 +535,36 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    console.log("clicked", inputValues);
+    console.log("clicked", key);
     try {
-      console.log(validateInputs());
-      if (!validateInputs()) {
-        const errorMessage = errorMessage();
-        warn(errorMessage[0]);
-        return;
-      }
-      // Create a new FormData object
-      const formData = new FormData();
-
-      // Iterate over the keys of the inputValues object
-      Object.keys(inputValues).forEach((key) => {
-        // Append each key-value pair to the FormData object
-        formData.append(key, inputValues[key]);
+      console.log(validateKey());
+      if (!validateKey()) return;
+      const response = await fetch("/api/auth/key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, agency }),
       });
-      formData.append("agency", agency);
-      try {
-        // Send the FormData object to the backend
-        const response = await fetch("/api/auth/signup", {
-          method: "POST",
-          headers: {},
-          body: formData,
-        });
 
-        const data = response.status !== 500 && (await response.json());
+      console.log(response);
 
-        console.log(response);
-        console.log(data);
-        // Handle the response from the backend
-        if (response.ok) {
-          // const data = await response.json();
-          // console.log(data);
-          if (data.success && data.status == "verified") {
-            notify(
-              "Sales Agent Account already Created. Redirecting to Sales Tab"
-            );
-            setTimeout(() => {
-              router.push(`/agent?s=${data.success}&r=${data.ref}`);
-            }, 1000);
-          }
-          if (data.success && data.status == "awaitingEmailVerification") {
-            notify(
-              "You will be redirected to where you will input verification soon"
-            );
-            setTimeout(() => {
-              router.push("/agent/login/verify-email");
-            }, 1000);
-          }
+      // setKey("")
+      const data = await response.json();
+      console.log(data);
 
-          // Handle successful form submission
-        } else {
-          if (response.status == 400) {
-            setErrorStatus(data.errorType);
-          }
-          if (response.status == 403) {
-            setErrorStatus(data.errorType);
-          }
-          if (response.status == 500) {
-            warn(
-              "There was a problem on our side. Please Contact Tido Empire."
-            );
-          }
-          // Handle errors
-          const errorData = data.error;
-          console.log(errorData);
-          warn(errorData);
+      if (response.ok) {
+        // Key is valid, redirect to login page with token
+        router.push(`/agent/login`);
+      } else {
+        // Key is invalid, handle accordingly (e.g., show error message)
+        if (response.status == 400) {
+          // alert("Forbidden route you will be redirected soon");
+          setErrorStatus(data.errorType);
+          console.log(error);
         }
-      } catch (error) {
-        // Handle network errors
-        console.error("An error occurred", error);
-        warn("Sorry, please contact Tido Empire and try again later.");
+        console.error(data.error);
       }
     } catch (error) {
       console.error("An error occurred", error);
-      warn("Sorry, please contact Tido Empire and try again later.");
     } finally {
       setSubmitting(false);
     }
@@ -772,33 +627,6 @@ export default function Login() {
     router.push("/agent/login");
   }, [agentMode, errorStatus]);
 
-  const switchAgency = () => {
-    agency === "company" ? setAgency("individual") : setAgency("company");
-    setInputValues({
-      fName: "",
-      lName: "",
-      companyName: "",
-      email: "",
-      pNumber: "",
-      image: "",
-      cacNo: "",
-      address: "",
-    });
-    setReadyForVerification({
-      fName: false,
-      lName: false,
-      companyName: false,
-      email: false,
-      pNumber: false,
-      image: false,
-      cacNo: false,
-      address: false,
-    });
-    setImagePreview(null);
-
-    console.log(agency, inputValues);
-  };
-
   useEffect(() => {
     if (agency === "individual" || agency === "company") {
       // Clear the error state
@@ -811,59 +639,23 @@ export default function Login() {
     }
   }, [agency]);
 
-  const getFieldsToWatch = (agency) => {
-    if (agency === "company") {
-      return ["companyName", "email", "pNumber", "image", "cacNo", "address"];
-    } else {
-      return ["fName", "lName", "email", "pNumber", "image"];
-    }
-  };
-
-  const inputVoid = () => {
-    const fieldsToWatch = getFieldsToWatch(agency);
-    return fieldsToWatch.some((field) => {
-      const value = inputValues[field];
-      return (
-        (typeof value === "string" && value.trim() === "") || value === null
-      );
-    });
-  };
-
   const vowels = ["a", "e", "i", "o", "u"];
-  const actionLink = () => {
-    return (
-      <Button
-        title={
-          agency === "company"
-            ? "Sign up for sales agent as a Company"
-            : "Sign up as for Tido Sales agent and an Single Agent"
-        }
-        onClick={(e) => {
-          e.preventDefault();
-          switchAgency();
-        }}
-        className=" w-full h-[40px] md:h-full flex items-center justify-center text-sm md:text-base font-semibold shadow-none bg-blue-600 sm:bg-transparent text-white   sm:text-black  hover:underline hover:underline-offset-4 hover:text-blue-700 hover:bg-transparent hover:opacity-80 "
-      >
-        {agency === "company" ? "Sign up as Individual" : "Sign up as Company"}
-      </Button>
-    );
-  };
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full">
       {isLoading ? (
         <Loading />
       ) : (
-        <div className="flex flex-col min:h-dvh w-full items-center  gap-5 animate__animated animate__zoomIn animate__faster relative">
-          <Navbar className="text-black" actionLink={actionLink()} />
-          <div className="flex flex-col items-center text-center gap-1 md:gap-3 mt-10  md:mt-20">
-            <h4 className="text-xl md:text-2xl leading-3 font-medium">Welcome To </h4>
-            <h1 className="text-3xl leading-10 md:leading-7 md:text-5xl lg:text-7xl text-blue-700 font-bold">
+        <div className="flex flex-col h-dvh w-full items-center  gap-5">
+          <Navbar className="text-black" />
+          <div className="flex flex-col items-center text-center gap-3 mt-20">
+            <h4 className="text-2xl leading-3 font-medium">Welcome To </h4>
+            <h1 className="text-7xl leading-7 text-blue-700 font-bold">
               Sales Agent SignUp
             </h1>
             {/* <span className="text-2xl leading-3 font-medium">Tab</span> */}
           </div>
-          <form className="flex flex-col gap-10 w-2/3 " onSubmit={handleSubmit}>
-            <div className="text-center text-base md:text-lg lg:text-xl font-medium">
+          <form className="flex flex-col gap-10 w-2/3" onSubmit={handleSubmit}>
+            <div className="text-center text-xl font-medium">
               {agency === "company" || agency === "individual" ? (
                 <h3 className="capitalize">
                   Signup as {vowels.includes(agency.slice(0, 1)) ? "an" : "a"}{" "}
@@ -880,7 +672,6 @@ export default function Login() {
                 <Input
                   // label="Company Name"
                   type="text"
-                  required
                   placeholder="Company Name"
                   min={"me"}
                   value={inputValues.companyName}
@@ -888,15 +679,13 @@ export default function Login() {
                     const val = "companyName";
                     handleInputChange(e, val);
                   }}
-                  disabled={submitting}
-                  className="bg-blue-400/70 h-full opacity-80 border-[1px] border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-blue-400/50 h-full opacity-80 border-3 border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px]"
                 />
               ) : (
                 <>
                   <Input
                     // label="First Name"
                     type="text"
-                    required
                     placeholder="First Name"
                     min={"me"}
                     value={inputValues.fName}
@@ -904,13 +693,11 @@ export default function Login() {
                       const val = "fName";
                       handleInputChange(e, val);
                     }}
-                    disabled={submitting}
-                    className="bg-blue-400/70 h-full opacity-80 border-[1px] border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-400/50 h-full opacity-80 border-3 border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px]"
                   />
                   <Input
                     // label="Last Name"
                     type="text"
-                    required
                     placeholder="Last Name"
                     min={"me"}
                     value={inputValues.lName}
@@ -918,8 +705,7 @@ export default function Login() {
                       const val = "lName";
                       handleInputChange(e, val);
                     }}
-                    disabled={submitting}
-                    className="bg-blue-400/70 h-full opacity-80 border-[1px] border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-400/50 h-full opacity-80 border-3 border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px]"
                   />
                 </>
               )}
@@ -930,7 +716,6 @@ export default function Login() {
                   <Input
                     // label="Company Name"
                     type="email"
-                    required
                     placeholder="Company Email"
                     min={"me"}
                     value={inputValues.email}
@@ -938,13 +723,11 @@ export default function Login() {
                       const val = "email";
                       handleInputChange(e, val);
                     }}
-                    disabled={submitting}
-                    className="bg-blue-400/70 h-full opacity-80 border-[1px] border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-400/50 h-full opacity-80 border-3 border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px]"
                   />
                   <Input
                     // label="Last Name"
                     type="number"
-                    required
                     placeholder="Company Contact"
                     min={"me"}
                     value={inputValues.pNumber}
@@ -952,8 +735,7 @@ export default function Login() {
                       const val = "pNumber";
                       handleInputChange(e, val);
                     }}
-                    disabled={submitting}
-                    className="bg-blue-400/70 h-full opacity-80 border-[1px] border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-400/50 h-full opacity-80 border-3 border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px]"
                   />
                 </>
               ) : (
@@ -961,7 +743,6 @@ export default function Login() {
                   <Input
                     // label="First Name"
                     type="email"
-                    required
                     placeholder="Email"
                     min={"me"}
                     value={inputValues.email}
@@ -969,13 +750,11 @@ export default function Login() {
                       const val = "email";
                       handleInputChange(e, val);
                     }}
-                    disabled={submitting}
-                    className="bg-blue-400/70 h-full opacity-80 border-[1px] border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-400/50 h-full opacity-80 border-3 border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px]"
                   />
                   <Input
                     // label="Last Name"
                     type="number"
-                    required
                     placeholder="Phone Number"
                     min={"me"}
                     value={inputValues.pNumber}
@@ -983,8 +762,7 @@ export default function Login() {
                       const val = "pNumber";
                       handleInputChange(e, val);
                     }}
-                    disabled={submitting}
-                    className="bg-blue-400/70 h-full opacity-80 border-[1px] border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-400/50 h-full opacity-80 border-3 border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px]"
                   />
                 </>
               )}
@@ -995,7 +773,6 @@ export default function Login() {
                   <Input
                     // label="Company Name"
                     type="text"
-                    required
                     placeholder="Company Address"
                     min={"me"}
                     value={inputValues.address}
@@ -1003,13 +780,11 @@ export default function Login() {
                       const val = "address";
                       handleInputChange(e, val);
                     }}
-                    disabled={submitting}
-                    className="bg-blue-400/70 h-full opacity-80 border-[1px] border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-400/50 h-full opacity-80 border-3 border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px]"
                   />
                   <Input
                     // label="Last Name"
                     type="number"
-                    required
                     placeholder="Company CAC"
                     min={"me"}
                     value={inputValues.cacNo}
@@ -1017,8 +792,7 @@ export default function Login() {
                       const val = "cacNo";
                       handleInputChange(e, val);
                     }}
-                    disabled={submitting}
-                    className="bg-blue-400/70 h-full opacity-80 border-[1px] border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-400/50 h-full opacity-80 border-3 border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px]"
                   />
                 </>
               ) : (
@@ -1026,14 +800,12 @@ export default function Login() {
                   <Input
                     // label="First Name"
                     type="file"
-                    required
                     accept="image/jpg, image/png, image/jpeg"
                     placeholder="Profile Image"
                     max={1}
-                    // value={!inputValues.image && ''}
+                    // value={inputValues.image}
                     onChange={handleFileChange}
-                    disabled={submitting}
-                    className="bg-blue-400/70 h-full opacity-80 border-[1px] border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-400/50 h-full opacity-80 border-3 border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px]"
                   />
                 </>
               )}
@@ -1043,14 +815,12 @@ export default function Login() {
                 <Input
                   // label="First Name"
                   type="file"
-                  required
                   accept="image/jpg, image/png, image/jpeg"
                   placeholder="Company Logo"
                   max={1}
                   // value={inputValues.image}
                   onChange={handleFileChange}
-                  disabled={submitting}
-                  className="bg-blue-400/70 h-full opacity-80 border-[1px] border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-blue-400/50 h-full opacity-80 border-3 border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px]"
                 />
               </div>
             )}
@@ -1074,7 +844,6 @@ export default function Login() {
                     key={`ValidationError_${index}`}
                     className="flex gap-2 items-center justify-center text-red-700 font-medium text-xl"
                   >
-                    {console.log(message)}
                     <div className="size-2 p-4 rounded-full bg-gray-500/30 flex items-center justify-center">
                       <FontAwesomeIcon icon={faInfo} />
                     </div>
@@ -1087,29 +856,17 @@ export default function Login() {
               type="submit"
               className={`bg-blue-700 border-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-4 `}
               onClick={handleSubmit}
-              disabled={
-                !agency || error.errorState || inputVoid() || submitting
-              }
+              // title={!validateKey() && "Ca"}
+              disabled={!agency || error.errorState}
               loading={submitting}
             >
-              Become an Agent
+              Submit Key
             </Button>
           </form>
-
         </div>
       )}
-      <ToastContainer />
-          {submitting && (
-            <>
-              <div className="w-full h-full fixed z-[999] flex items-center justify-center bg-black/70 top-0 left-0 gap-4">
-                <div className="size-4 bg-transparent border-4 border-white border-r-0 border-l-0 border-t-0 rounded-xl box-content animate-spin"></div>
-                <ConfirmationMessage
-                className="w-96"
-                  message={"Creating Account..."}
-                />
-              </div>
-            </>
-          )}
     </div>
   );
 }
+
+
