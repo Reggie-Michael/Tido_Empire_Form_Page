@@ -240,6 +240,7 @@ export const POST = async (request) => {
       await connectToDB();
       // Check if the key exists
       const keyData = await SalesAgentKey.findOne({ key: key, expired: false });
+      console.log(keyData)
 
       if (!keyData) {
         // Key does not exist
@@ -247,7 +248,7 @@ export const POST = async (request) => {
           JSON.stringify({
             error:
               "Key does not exist! Contact Tido Empire to verify Key status.",
-            errorType: keyNonExistent,
+            errorType: "keyNonExistent",
           }),
           { status: 400 }
         );
