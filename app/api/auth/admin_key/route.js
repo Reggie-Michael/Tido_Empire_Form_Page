@@ -1,63 +1,32 @@
 import jwt from "jsonwebtoken";
-import { redirect } from "next/navigation";
 
-const SECRET_KEY = process.env.NEXTAUTH_SECRET; // Replace with your actual secret key
+const SECRET_KEY = process.env.SITE_SECRET; // Replace with your actual secret key
+let numberOfTries = 3;
+let retryCountdown;
 
-const key = {
+const tokenData = {
   keyId: "",
-  mode: "",
   verified: false,
 };
 
-const modeCheck = (value) => {
-  if (value === "sales agent") {
-    return process.env.SALES_AGENT_KEY;
-  } else if (value === "admin") {
-    return process.env.ADMIN_KEY;
-  } else {
-    return "default";
-  }
-};
-const validateKey = (key, role) => {
-  console.log("From validation:", " validation request received")
-  let allInputsValid = true;
-  const inputLength = key?.length;
-  const minimumLength = 5;
-  const maximumLength = 30;
-
-  // Validation logic...
-
-  // Check if key is missing
-  console.log("From validation:", " checking key availability")
-  if (!key) {
-    allInputsValid = false;
-    return "keyNull";
-  }
-  
-  // Check if role is missing or invalid
-  console.log("From validation:", " checking role availability")
-  if (!role || (role !== "sales agent" && role !== "admin")) {
-    allInputsValid = false;
-    return "invalidRole";
-  }
-  
-  // Check if key length is invalid
-  console.log("From validation:", " checking input length")
-  if (!(inputLength >= minimumLength && inputLength <= maximumLength)) {
-    allInputsValid = false;
-    return "minMaxInvalid";
-  }
-  
-  // Check if key contains non-alphanumeric characters
-  console.log("From validation:", " checking input pattern")
-  const containsNonAlphaNumeric = /[^a-zA-Z0-9]/.test(key);
-  if (containsNonAlphaNumeric) {
-    allInputsValid = false;
-    return "validateError";
-  }
-
-  if (allInputsValid) {
-    return "pass";
+const validateKey = (key) => {
+  try {
+    const inputLength = key?.length;
+    const containsNonAlphaNumeric = /[^a-zA-Z0-9]/.test(key);
+    const minimumLength = 5;
+    const maximumLength = 30;
+    // Validation logic...
+    if (!key) {
+      return "keyNull";
+    } else if (inputLength < minimumLength || inputLength > maximumLength) {
+      return "minMaxInvalid";
+    } else if (containsNonAlphaNumeric) {
+      return "validateError";
+    } else {
+      return "pass";
+    }
+  } catch (error) {
+    console.error("Error validating key:", error);
   }
 };
 
@@ -68,33 +37,51 @@ export const GET = async (request) => {
       headers: { "Content-Type": "application/json" },
     });
   }
-
+  if (numberOfTries === 0)
+    return new Response(
+      JSON.stringify({
+        error: "Max Number of Tries in 10 minutes used up",
+        errorType: "maxTriesOverlapped",
+      }),
+      { status: 403 }
+    );
   console.log("Request received");
   // console.log(request)
+  console.log(tokenData);
+
   // Extract query parameters from the request
-  const searchParams = request.nextUrl.searchParams
-  // const query = searchParams.get('query')
-  const token = searchParams.get('token');
-  const role = searchParams.get('role');
-  console.log(searchParams)
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(
+      JSON.stringify({
+        error: "Authorization header missing",
+        errorType: "authorizationHeaderMissing",
+      }),
+      {
+        status: 401,
+      }
+    );
+  }
+  // Extract the token from the Authorization header
+  const token = authHeader.split(" ")[1];
+  console.log("token", token);
   // Use the extracted parameters or fallback to default values
-  const passToken = token.length > 2 ? token : tokenData.keyId;
-  const mode = role? role : tokenData.mode;
-  console.log(passToken.length)                   
-  console.log(mode)                   
+  const passToken = token ? token : tokenData.keyId;
+  console.log(passToken.length);
+  console.log(passToken, tokenData.keyId);
 
   try {
     // Verify the token
     // console.log(tokenData);
     // console.log(passToken)
-    console.log(!passToken)
+    console.log(!passToken);
     if (!tokenData.verified && !passToken) {
-     
+     console.log("Access not verified")
       return new Response(
         JSON.stringify({
           success: false,
           error: true,
-          errorStatus: "keyAbsent",
+          errorType: "keyAbsent",
           errorMessage:
             "This is a forbidden route need to input key to access this route",
         }),
@@ -103,28 +90,23 @@ export const GET = async (request) => {
         }
       );
     }
-    
+
     const decodedToken = jwt.verify(passToken, SECRET_KEY);
     console.log(decodedToken);
-    
-    // Retrieve the key associated with the mode
-    const passKey = modeCheck(mode);
-    console.log(passKey)
 
     // Check if the decoded token matches the expected key
-    const isValidKey = decodedToken.keyId === passKey;
+    const isValidKey = decodedToken.keyId === process.env.ADMIN_KEY;
 
-    console.log(isValidKey)
+    console.log(isValidKey);
     if (isValidKey) {
       // Return success response if the key is valid
       const res = {
         token: passToken,
-        mode: mode,
         success: true,
         error: false,
         errorMessage: "",
       };
-  
+
       return new Response(JSON.stringify(res), {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -135,7 +117,7 @@ export const GET = async (request) => {
         JSON.stringify({
           success: false,
           error: true,
-          errorStatus: "invalidKey",
+          errorType: "invalidKey",
           errorMessage: "Your token is wrong. Please try again",
         }),
         {
@@ -151,11 +133,11 @@ export const GET = async (request) => {
         JSON.stringify({
           success: false,
           error: true,
-          errorStatus: "expiredKey",
+          errorType: "expiredKey",
           errorMessage: "Your token has expired. Please try again",
         }),
         {
-          status: 404,
+          status: 400,
         }
       );
     } else {
@@ -164,11 +146,11 @@ export const GET = async (request) => {
         JSON.stringify({
           success: false,
           error: true,
-          errorStatus: "invalidKey",
-          errorMessage: "Your token is invalid. Please try again",
+          errorType: "serverError",
+          errorMessage: "An unexpected error occurred. Please try again later",
         }),
         {
-          status: 404,
+          status: 500,
         }
       );
     }
@@ -183,24 +165,22 @@ export const POST = async (request) => {
         status: 405,
       });
     }
-
-    console.log("Key Processing");
-    const { key, role } = await request.json();
-    console.log(key, role)
-
-    console.log("Key and Role validating...");
-    const returnErrorMessage = validateKey(key, role);
-    console.log("Key and Role validated");
-    if (returnErrorMessage !== "pass") {
-      console.log("validation fail!")
+    if (retryCountdown && new Date() > retryCountdown) {
+      numberOfTries = 3; // Reset the number of retries
+      retryCountdown = null; // Reset the countdown timer
+    }
+    if (numberOfTries === 0)
       return new Response(
         JSON.stringify({
-          error: "Validation Error!",
-          errorType: returnErrorMessage,
+          error: "Max Number of Tries in 10 minutes used up",
+          errorType: "maxTriesOverlapped",
         }),
-        { status: 400 }
+        { status: 403 }
       );
-    }
+    console.log("Key Processing");
+    const { key } = await request.json();
+    console.log(key);
+
     if (!key) {
       console.log("Key not present");
       return new Response(
@@ -211,38 +191,37 @@ export const POST = async (request) => {
         { status: 400 }
       );
     }
-    if (!role) {
-      console.log(" Role not present");
+    console.log("Key validating...");
+    const returnErrorMessage = validateKey(key);
+    console.log("Key validated", returnErrorMessage);
+    if (returnErrorMessage !== "pass") {
+      console.log("validation fail!");
+      if (numberOfTries <= 1) {
+        // If maximum number of tries reached, set the countdown timer
+        retryCountdown = new Date(Date.now() + 10 * 60 * 1000); // Set countdown timer for 30 minutes
+      }
+      numberOfTries--;
       return new Response(
         JSON.stringify({
-          error: "Key and Mode need to be present",
-          errorType: "roleNull",
+          error: "Validation Error!",
+          errorType: returnErrorMessage,
         }),
         { status: 400 }
       );
     }
     console.log("Key Processed");
 
-    if (role !== "sales agent" && role !== "admin") {
-      return new Response(
-        JSON.stringify({
-          error: "Mode not Supported, input valid mode",
-          errorType: "invalidMode",
-        }),
-        { status: 400 }
-      );
-    }
-
-    const passKey = modeCheck(role);
-    console.log(passKey);
-
-    // const check = "process.env." + mode;
     // Perform key verification logic here (e.g., check against a database)
-    const isValidKey = key === passKey; // Replace with your validation logic
+    const isValidKey = key === process.env.ADMIN_KEY; // Replace with your validation logic
 
-    console.log(key, passKey);
+    console.log(key, process.env.ADMIN_KEY);
     console.log(isValidKey);
     if (!isValidKey) {
+      if (numberOfTries <= 1) {
+        // If maximum number of tries reached, set the countdown timer
+        retryCountdown = new Date(Date.now() + 10 * 60 * 1000); // Set countdown timer for 30 minutes
+      }
+      numberOfTries--;
       return new Response(
         JSON.stringify({ error: "Invalid key", errorType: "invalidKey" }),
         {
@@ -253,18 +232,17 @@ export const POST = async (request) => {
 
     // Generate a JWT token with relevant information
     console.log("token generating");
-    const token = jwt.sign({ keyId: key, role: role }, SECRET_KEY, {
+    const token = jwt.sign({ keyId: key }, SECRET_KEY, {
       expiresIn: "1h",
     });
     console.log("token generated");
 
     tokenData.keyId = token;
-    tokenData.mode = role;
     tokenData.verified = true;
 
+    console.log(tokenData);
     const res = {
       token: token,
-      mode: role,
       checkStatus: "verified",
       error: false,
       errorMessage: "",

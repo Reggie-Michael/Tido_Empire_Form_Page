@@ -16,10 +16,13 @@ const ValidationPage = () => {
   const [verificationCode, setVerificationCode] = useState("");
   const [displayCode, setDisplayCode] = useState("");
   const [email, setEmail] = useState("");
+  const [passToken, setPassToken] = useState("");
   const [remainingTries, setRemainingTries] = useState(MAX_TRIES);
   const [remainingTime, setRemainingTime] = useState(COUNTDOWN_DURATION);
   const [countdownExpired, setCountdownExpired] = useState(false);
   const [readyForVerification, setReadyForVerification] = useState(false);
+  const [responseGotten, setResponseGotten] = useState(false);
+
   const [isLoading, setIsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState({
@@ -27,13 +30,15 @@ const ValidationPage = () => {
     type: "",
   });
 
-  const inputRefs = useRef([]);
   const router = useRouter();
+  // const passKeyToken = searchParams.get("OiD");
+  const dataFetchedRef = useRef(false);
+
   const notify = (message) =>
     toast.success(message, {
       position: "top-right",
       autoClose: 5000,
-      hideProgressBar: false,
+      hideProgressBar: true,
       closeOnClick: true,
       pauseOnHover: true,
       draggable: true,
@@ -46,7 +51,7 @@ const ValidationPage = () => {
     toast.error(message, {
       position: "top-center",
       autoClose: 5000,
-      hideProgressBar: false,
+      hideProgressBar: true,
       closeOnClick: true,
       pauseOnHover: true,
       draggable: true,
@@ -75,9 +80,15 @@ const ValidationPage = () => {
     setSubmitting(true);
 
     try {
+      // Set up headers
+      const headers = new Headers();
+      headers.append("Content-Type", "application/json"); // or "multipart/form-data" if needed
+
+      // Append submissionState as a header
+      headers.append("Submission-State", "verification");
       const response = await fetch("/api/auth/signup", {
         method: "POST",
-        headers: {},
+        headers: headers,
         body: JSON.stringify({ verificationCode }),
       });
 
@@ -90,10 +101,12 @@ const ValidationPage = () => {
         if (response.status === 400) {
           setError({ errorState: true, type: data.errorType });
           setRemainingTries((tries) => tries - 1);
-          if (remainingTries === 1) {
+          if (remainingTries === 0) {
             startCountdown();
           }
         } else if (response.status === 403) {
+          if (data.errorType === "keyAbsent" || data.errorTpe === "keyNull2")
+            router.push(`/access?errorStatus=${data.errorType}`);
           setError({ errorState: true, type: data.errorType });
           setRemainingTries(0);
         } else if (response.status === 500) {
@@ -109,8 +122,24 @@ const ValidationPage = () => {
     }
   };
 
-  const verifyAccess = async () => {
+  const verifyAccess = useCallback(async () => {
     try {
+      const handleErrorResponse = (response) => {
+        if (response.status === 400) {
+          warn("Saved Data has been wiped for some reason. Please Try again.");
+          setTimeout(() => router.push(`/agent/login`), 1000);
+        } else if (response.status === 401) {
+          warn("Forbidden route you will be redirected soon.");
+          setError({ errorState: true, type: "unauthorized" });
+          setTimeout(() => router.push(`/agent/login`), 2000);
+        } else if (response.status === 403) {
+          setError({ errorState: true, type: "maxTriesOverlapped" });
+          setRemainingTries(0);
+        } else if (response.status === 500) {
+          warn("Sorry, please contact Tido Empire and try again later.");
+          setTimeout(() => router.push(`/`), 3000);
+        }
+      };
       const url = `/api/auth/signup`;
       const response = await fetch(url);
 
@@ -127,26 +156,25 @@ const ValidationPage = () => {
     } catch (error) {
       console.error("An error occurred", error);
       warn("Sorry, please contact Tido Empire and try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    } 
+  }, [router]); // No dependencies here because fetch is used internally
 
   const handleResend = async () => {
     try {
+      setSubmitting(true);
       const url = `/api/auth/signup?retry=true`;
       const response = await fetch(url);
 
       if (response.ok) {
         const data = await response.json();
         if (data.authorized && data.status == "resendVerification") {
-          router.push("/agent/login/verify-email");
+          // router.push("/agent/login/verify-email");
+          if (remainingTries === 0) {
+            startCountdown();
+          }
           setEmail(data.userEmail);
           setError({ errorState: true, type: data.status });
           setRemainingTries((tries) => tries - 1);
-          if (remainingTries === 1) {
-            startCountdown();
-          }
         }
       } else {
         handleErrorResponse(response);
@@ -154,23 +182,8 @@ const ValidationPage = () => {
     } catch (error) {
       console.error("An error occurred", error);
       warn("Sorry, please contact Tido Empire and try again later.");
-    }
-  };
-
-  const handleErrorResponse = (response) => {
-    if (response.status === 400) {
-      warn("Saved Data has been wiped for some reason. Please Try again.");
-      setTimeout(() => router.push(`/agent/login`), 1000);
-    } else if (response.status === 401) {
-      warn("Forbidden route you will be redirected soon.");
-      setError({ errorState: true, type: "unauthorized" });
-      setTimeout(() => router.push(`/agent/login`), 2000);
-    } else if (response.status === 403) {
-      setError({ errorState: true, type: "maxTriesOverlapped" });
-      setRemainingTries(0);
-    } else if (response.status === 500) {
-      warn("Sorry, please contact Tido Empire and try again later.");
-      setTimeout(() => router.push(`/`), 3000);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -183,8 +196,17 @@ const ValidationPage = () => {
   };
 
   useEffect(() => {
-    verifyAccess();
-  }, []);
+    if (dataFetchedRef.current) return;
+    try {
+      verifyAccess();
+      dataFetchedRef.current = true;
+    } catch (error) {
+      warn("An unexpected error occurred! Refreshing...");
+      setTimeout(() => router.push("/agent/login"), 500);
+    } finally {
+      setResponseGotten(true);
+    }
+  }, [verifyAccess, router]);
 
   useEffect(() => {
     if (readyForVerification) {
@@ -199,8 +221,8 @@ const ValidationPage = () => {
   }, [countdownExpired]);
 
   useEffect(() => {
-    setTimeout(() => setIsLoading(false), 1000);
-  }, []);
+    responseGotten && setTimeout(() => setIsLoading(false), 1000);
+  }, [responseGotten]);
 
   useEffect(() => {
     if (remainingTries === 0) {
@@ -279,7 +301,7 @@ const ValidationPage = () => {
             <div className="flex gap-5 w-full px-[2%] sm:w-4/5 md:w-3/5 lg:1/4">
               <Input
                 type="text"
-                disabled={submitting || remainingTries === 0}
+                disabled={submitting || remainingTries === 0 || !responseGotten}
                 value={displayCode}
                 onChange={handleInputChange}
                 autoFocus={true}
@@ -289,8 +311,10 @@ const ValidationPage = () => {
             </div>
             {error.errorState && (
               <div
-                className={`flex gap-2 items-center justify-center text-red-700 font-medium text-xl ${
-                  error.type == "resendVerification" && "text-green-500"
+                className={`flex gap-2 items-center justify-center  font-medium text-xl ${
+                  error.type == "resendVerification"
+                    ? "text-green-500"
+                    : "text-red-700"
                 }`}
               >
                 <div className="size-2 p-4 rounded-full bg-gray-500/30 flex items-center justify-center">
@@ -309,7 +333,7 @@ const ValidationPage = () => {
                 error.errorState ||
                 verificationCode.length !== 6 ||
                 submitting ||
-                remainingTries === 0
+                remainingTries === 0 || !responseGotten
               }
               loading={submitting}
             >
@@ -319,10 +343,7 @@ const ValidationPage = () => {
               type="button"
               className={`bg-transparent text-base md:text-lg hover:underline disabled:opacity-50 text-blue-600 disabled:cursor-not-allowed flex items-center justify-center shadow-none`}
               onClick={handleResend}
-              disabled={
-                submitting ||
-                remainingTries === 0
-              }
+              disabled={submitting || remainingTries === 0}
               loading={submitting}
             >
               Resend Code
@@ -330,7 +351,7 @@ const ValidationPage = () => {
           </div>
           <ToastContainer />
           {remainingTries === 0 && (
-            <div className="flex items-center justify-center w-full h-full fixed top-0 left-0">
+            <div className="flex items-center justify-center w-full h-full fixed top-0 left-0 bg-black/90">
               <div>
                 <p className="flex gap-2 items-center justify-center text-red-700 font-medium text-xl">
                   Remaining tries: {remainingTries}

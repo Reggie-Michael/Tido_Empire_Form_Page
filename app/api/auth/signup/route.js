@@ -5,6 +5,7 @@ import path from "path";
 import { connectToDB } from "@/utils/database";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
+import SalesAgentKey from "@/models/agentKey";
 
 const formData = {
   fName: "",
@@ -18,6 +19,7 @@ const formData = {
 };
 
 let agency;
+let passId;
 const verificationData = {
   code: "",
   expTime: "",
@@ -46,6 +48,7 @@ const resetData = () => {
   verificationData.code = "";
   verificationData.expTime = "";
   agency = "";
+  passId= "";
 };
 const validateMainName = (name) => {
   const minLength = inputLength.nameMinLength;
@@ -113,7 +116,6 @@ const validateEmail = (email) => {
     return "internalValidationError";
   }
 };
-
 const validatePhoneNumber = (phoneNumber) => {
   const minLength = inputLength.numberMinLength;
   const maxLength = inputLength.numberMaxLength;
@@ -138,7 +140,6 @@ const validatePhoneNumber = (phoneNumber) => {
     return "internalValidationError";
   }
 };
-
 const validateCacNumber = (cacNo) => {
   const minLength = inputLength.numberMinLength;
   const maxLength = inputLength.numberMaxLength;
@@ -169,7 +170,6 @@ const validateCacNumber = (cacNo) => {
     return "internalValidationError";
   }
 };
-
 const validateAddress = (address) => {
   const addressRegex = /^[a-zA-Z0-9\+\-\@ ]+$/;
   console.log("Validating Address");
@@ -189,7 +189,6 @@ const validateAddress = (address) => {
     return "internalValidationError";
   }
 };
-
 const validateImage = (image) => {
   console.log("Validating Image");
   try {
@@ -261,7 +260,6 @@ const saveImage = async (imageFile, imageName) => {
     return null; // Return null if there was an error saving the image
   }
 };
-
 // Create a Nodemailer transporter
 const transporter = nodemailer.createTransport({
   service: "Gmail", // Use your email service provider here
@@ -281,7 +279,6 @@ const generateVerificationCode = () => {
   const expirationTime = timestamp + 10 * 60 * 1000; // Add ten minutes in milliseconds
   return { verificationCode, expirationTime };
 };
-
 // Function to send verification code to email
 const sendVerificationCode = async (email) => {
   const { verificationCode, expirationTime } = generateVerificationCode();
@@ -363,12 +360,18 @@ const isCodeExpired = (expirationTime) => {
   const currentTime = Date.now();
   return currentTime > expirationTime;
 };
+
 export const GET = async (request) => {
   if (request.method !== "GET") {
     return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
       status: 405,
       headers: { "Content-Type": "application/json" },
     });
+  }
+
+  if (retryCountdown && new Date() > retryCountdown) {
+    numberOfTries = 3; // Reset the number of retries
+    retryCountdown = null; // Reset the countdown timer
   }
 
   console.log("Request received");
@@ -386,37 +389,48 @@ export const GET = async (request) => {
       );
     if (agency && formData) {
       if (!inputVoid()) {
+        console.log("Resend verification route");
         const searchParams = request.nextUrl.searchParams;
         // const query = searchParams.get('query')
         const resendVerification = searchParams.get("retry");
-        const maskedEmail = maskEmail(formData?.email);
-        if (resendVerification === true) {
-          const email = formData?.email;
-          const verificationMessage = await sendVerificationCode(email)
-            .then((result) => {
-              console.log("Verification code:", result?.verificationCode);
-              return result;
-            })
-            .catch((error) => {
-              console.error("Error", error);
-            });
+        console.log("resendVerification", resendVerification);
+        const email = formData?.email;
+        const maskedEmail = maskEmail(email);
+        try {
+          if (resendVerification) {
+            const verificationMessage = await sendVerificationCode(email)
+              .then((result) => {
+                console.log("Verification code:", result?.verificationCode);
+                return result;
+              })
+              .catch((error) => {
+                console.error("Error", error);
+              });
 
-          console.log("Verification Message", verificationMessage);
-          verificationData.code = verificationMessage.verificationCode;
-          verificationData.expTime = verificationMessage.expirationTime;
-          numberOfTries--;
-
-          return new Response(
-            JSON.stringify({
-              authorized: true,
-              status: "resendVerification",
-              success: true,
-              userEmail: maskedEmail,
-            }),
-            {
-              status: 200,
+            console.log("Verification Message", verificationMessage);
+            verificationData.code = verificationMessage.verificationCode;
+            verificationData.expTime = verificationMessage.expirationTime;
+            if (numberOfTries <= 1) {
+              // If maximum number of tries reached, set the countdown timer
+              retryCountdown = new Date(Date.now() + 10 * 60 * 1000); // Set countdown timer for 30 minutes
             }
-          );
+            numberOfTries--;
+            console.log("Resend verification route closed");
+
+            return new Response(
+              JSON.stringify({
+                authorized: true,
+                status: "resendVerification",
+                success: true,
+                userEmail: maskedEmail,
+              }),
+              {
+                status: 200,
+              }
+            );
+          }
+        } catch (error) {
+          console.error(error);
         }
         return new Response(
           JSON.stringify({
@@ -472,172 +486,251 @@ export const POST = async (request) => {
   try {
     console.log("request received");
     console.log("formData", formData);
-
+    // const submissionState = request.headers.get("Submission-State");
+    // console.log(submissionState);
     if (request.method !== "POST") {
       return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
         status: 405,
       });
     }
+    if (retryCountdown && new Date() > retryCountdown) {
+      numberOfTries = 3; // Reset the number of retries
+      retryCountdown = null; // Reset the countdown timer
+    }
+    let newFormData = null;
+    try {
+      newFormData = await request.formData();
+    } catch (error) {
+      console.error("Error parsing request form:", error.message);
+    }
 
-    if (inputVoid()) {
-      console.log("form Processing");
-      const newFormData = await request.formData();
-      const formDataKeys = Object.keys(formData);
-      const formDataMatch = formDataKeys.every(
-        (key) => formData[key] === newFormData.get(key)
-      );
+    // Check if the request body contains JSON data
+    let requestBody = null;
+    try {
+      requestBody = await request.json();
+    } catch (error) {
+      console.error("Error parsing request body as JSON:", error.message);
+    }
+    // Determine the submission state based on the presence of formData
+    const submissionState = newFormData ? "initial" : "verification";
 
-      console.log(newFormData);
-      console.log(numberOfTries);
-      // const agency = newFormData.get("agency");
-      if (numberOfTries === 0 && formDataMatch)
-        return new Response(
-          JSON.stringify({
-            error: "Max Number of Tries in 10 minutes used up",
-            errorType: "maxTriesOverlapped",
-          }),
-          { status: 403 }
-        );
-      agency = newFormData.get("agency");
-      console.log("Checking Agency");
-      if (!agency || !["company", "individual"].includes(agency)) {
-        return new Response(
-          JSON.stringify({
-            error: "Agency is not valid",
-            errorType: "agencyInvalid",
-          }),
-          { status: 400 }
-        );
-      }
-      console.log(agency);
-      // Define validation rules based on agency type
-      console.log("Validation Rule called");
-
-      const validationRules = {
-        common: {
-          email: validateEmail(newFormData.get("email")),
-          pNumber: validatePhoneNumber(newFormData.get("pNumber")),
-          image: validateImage(newFormData.get("image")),
-        },
-        company: {
-          name: validateMainName(
-            newFormData.get("companyName"),
-            4,
-            35,
-            "companyName"
-          ),
-          cacNo: validateCacNumber(newFormData.get("cacNo")),
-          address: validateAddress(newFormData.get("address")),
-        },
-        individual: {
-          fName: validateMainName(newFormData.get("fName"), 2, 15, "fName"),
-          lName: validateOtherName(newFormData.get("lName"), 2, 15, "lName"),
-        },
-      };
-      console.log("Validating Form Data");
-
-      // Validate form data
-      console.log("Validating Form Data");
-      const errors = {};
-      const rules = validationRules[agency];
-      Object.keys(rules).forEach((field) => {
-        errors[field] = rules[field];
-      });
-
-      // Merge common validation errors
-      const commonErrors = validationRules.common;
-      Object.keys(commonErrors).forEach((field) => {
-        if (!errors[field]) {
-          errors[field] = commonErrors[field];
-        }
-      });
-
-      // Check for validation errors
-      const errorFields = Object.keys(errors).filter(
-        (field) => errors[field] !== "passCheck"
-      );
-
-      console.log("errorFields", errorFields);
-      console.log("errors", errors);
-
-      // Check for internal server error
-      console.log("checking for server error");
-      // Check if any value in the errors object is equal to the desired error value
-      if (
-        Object.values(errors).some(
-          (error) => error === "internalValidationError"
-        )
-      ) {
-        // Handle the case where the desired error value is found
-        console.log("returning 500");
-        return new Response("Internal server error", { status: 500 });
-      }
-
-      console.log("checking for other error");
-      if (errorFields.length > 0) {
-        return new Response(
-          JSON.stringify({ error: "Validation failed", errors }),
-          { status: 400 }
-        );
-      }
-
-      // Check for internal server error
-      // if (errors.some((error) => error === 500)) {
-      //   return new Response("Internal Server Error", { status: 500 });
-      // }
-
-      for (const entry of newFormData.entries()) {
-        const [name, value] = entry;
-        // formData.append(name, value);
-        formData[name] = value;
-      }
-      console.log(agency);
-      console.log(formData);
-
-      // Form data is valid, proceed with processing
+    if (submissionState == "initial") {
       try {
-        await connectToDB();
-        const nameType = agency === "company" ? "Company" : "Agent";
+        console.log("form Processing");
+        // const newFormData = await request.formData();
+        const formDataKeys = Object.keys(formData);
+        const formDataMatch = formDataKeys.every(
+          (key) => formData[key] === newFormData.get(key)
+        );
 
-        console.log("nameType", nameType);
-        const existingAgentName = await Agent.findOne({
-          mainName: formData?.fName || formData?.companyName,
-        });
-        const existingAgentOtherName = await Agent.findOne({
-          otherName: formData?.lName,
-        });
+        console.log(newFormData);
+        console.log(numberOfTries);
+        // const agency = newFormData.get("agency");
 
-        const existingAgentEmail = await Agent.findOne({
-          email: formData?.email,
-        });
-        const existingAgentPhoneNumber = await Agent.findOne({
-          phoneNumber: formData?.pNumber,
-        });
+        if (numberOfTries === 0)
+          return new Response(
+            JSON.stringify({
+              error: "Max Number of Tries in 10 minutes used up",
+              errorType: "maxTriesOverlapped",
+            }),
+            { status: 403 }
+          );
+        if (!passId) passId = newFormData.get("passKey");
 
-        const existingAgentCacNo = await Agent.findOne({
-          cacNo: formData?.cacNo,
-        });
+        if (!passId) {
+          return new Response(
+            JSON.stringify({
+              error: "PassKey is absent!",
+              errorType: "KeyNull2",
+            }),
+            { status: 403 }
+          );
+        }
 
-        const existingAgent = await Agent.findOne({
-          $and: [
-            { mainName: formData?.fName || formData?.companyName },
-            { otherName: formData?.lName },
-            { email: formData?.email },
-            { phoneNumber: formData?.pNumber },
-            { cacNo: formData?.cacNo },
-          ],
-        });
+        // for retry before validation is done
+        if (!inputVoid()) {
+          numberOfTries--;
+          if (!verificationData.code || !verificationData.expTime) {
+            try {
+              await connectToDB();
+              const nameType = agency === "company" ? "Company" : "Agent";
 
-        console.log(existingAgent);
-        if (existingAgent) {
-          const agentId = existingAgent._id;
-          console.log("Agent Exist and is being logged in");
-          resetData();
+              console.log("nameType", nameType);
+              const existingAgentName = await Agent.findOne({
+                mainName: formData?.fName || formData?.companyName,
+              });
+              const existingAgentOtherName = await Agent.findOne({
+                otherName: formData?.lName,
+              });
+
+              const existingAgentEmail = await Agent.findOne({
+                email: formData?.email,
+              });
+              const existingAgentPhoneNumber = await Agent.findOne({
+                phoneNumber: formData?.pNumber,
+              });
+
+              const existingAgentCacNo = await Agent.findOne({
+                cacNo: formData?.cacNo,
+              });
+
+              const existingAgent = await Agent.findOne({
+                $and: [
+                  { mainName: formData?.fName || formData?.companyName },
+                  { otherName: formData?.lName },
+                  { email: formData?.email },
+                  { phoneNumber: formData?.pNumber },
+                  { cacNo: formData?.cacNo },
+                ],
+              });
+
+              console.log(existingAgent);
+              if (existingAgent) {
+                const agentId = existingAgent._id;
+                console.log("Agent Exist and is being logged in");
+                // const returnRef = `${process.env.SITE_URL}/?r=${agentId}`;
+
+                try {
+                  await SalesAgentKey.findByIdAndDelete(passId);
+                } catch (error) {
+                  return new Response(
+                    JSON.stringify({
+                      success: true,
+                      type: "awaitConfirmation",
+                    }),
+                    {
+                      status: 500,
+                    }
+                  );
+                }
+                resetData();
+                return new Response(
+                  JSON.stringify({
+                    success: true,
+                    status: "verified",
+                    ref: agentId,
+                  }),
+                  {
+                    status: 200,
+                    headers: { "Content-Type": "application/json" },
+                  }
+                );
+              }
+
+              if (existingAgentName && existingAgentOtherName) {
+                // If a document with the same name is found, return an error response
+                const nameErrorType =
+                  agency === "company" ? "nameExist" : "companyExist";
+                console.log(nameErrorType);
+                resetData();
+                return new Response(
+                  JSON.stringify({
+                    error: `${nameType} name already exists"`,
+                    errorType: nameErrorType,
+                  }),
+                  {
+                    status: 400,
+                  }
+                );
+              }
+
+              if (existingAgentEmail) {
+                // If a document with the same email is found, return an error response
+                resetData();
+                return new Response(
+                  JSON.stringify({
+                    error: `${nameType} email already exists"`,
+                    errorType: "emailExist",
+                  }),
+                  {
+                    status: 400,
+                  }
+                );
+              }
+
+              if (existingAgentPhoneNumber) {
+                // If a document with the same email is found, return an error response
+                resetData();
+                return new Response(
+                  JSON.stringify({
+                    error: `${nameType} number already exists"`,
+                    errorType: "pNumberExist",
+                  }),
+                  {
+                    status: 400,
+                  }
+                );
+              }
+
+              if (agency === "company" && existingAgentCacNo) {
+                // If a document with the same email is found, return an error response
+                resetData();
+                return new Response(
+                  JSON.stringify({
+                    error: `Company Cac Number already exists"`,
+                    errorType: "cacNoExist",
+                  }),
+                  {
+                    status: 400,
+                  }
+                );
+              }
+              const email = formData?.email;
+              const verificationMessage = await sendVerificationCode(email)
+                .then((result) => {
+                  console.log("Verification code:", result?.verificationCode);
+                  return result;
+                })
+                .catch((error) => {
+                  console.error("Error", error);
+                });
+
+              console.log("Verification Message", verificationMessage);
+              verificationData.code = verificationMessage.verificationCode;
+              verificationData.expTime = verificationMessage.expirationTime;
+              return new Response(
+                JSON.stringify({
+                  success: true,
+                  status: "awaitingEmailVerification",
+                }),
+                {
+                  status: 200,
+                  headers: { "Content-Type": "application/json" },
+                }
+              );
+              // try {
+              // } catch (error) {
+              //   console.error("error sending mail", error);
+              // }
+              // Find the existing prompt by ID
+              // const existingPrompt = await Prompt.findById(params.id);
+
+              // if (!existingPrompt) {
+              //     return new Response("Prompt not found", { status: 404 });
+              // }
+
+              // // Update the prompt with new data
+              // existingPrompt.prompt = prompt;
+              // existingPrompt.tag = tag;
+
+              // await existingPrompt.save();
+
+              // return new Response("Successfully updated the Prompts", { status: 200 });
+            } catch (error) {
+              console.error("Error validating with database", error);
+              return new Response("Error Performing Database Validation", {
+                status: 500,
+              });
+            }
+          }
+          if (numberOfTries <= 1) {
+            // If maximum number of tries reached, set the countdown timer
+            retryCountdown = new Date(Date.now() + 10 * 60 * 1000); // Set countdown timer for 30 minutes
+          }
           return new Response(
             JSON.stringify({
               success: true,
-              status: "verified",
-              ref: agentId,
+              status: "awaitingEmailVerification",
             }),
             {
               status: 200,
@@ -645,114 +738,280 @@ export const POST = async (request) => {
             }
           );
         }
-
-        if (existingAgentName && existingAgentOtherName) {
-          // If a document with the same name is found, return an error response
-          const nameErrorType =
-            agency === "company" ? "nameExist" : "companyExist";
-          console.log(nameErrorType);
+        agency = newFormData.get("agency");
+        console.log("Checking Agency");
+        if (!agency || !["company", "individual"].includes(agency)) {
           return new Response(
             JSON.stringify({
-              error: `${nameType} name already exists"`,
-              errorType: nameErrorType,
+              error: "Agency is not valid",
+              errorType: "agencyInvalid",
             }),
-            {
-              status: 400,
-            }
+            { status: 400 }
+          );
+        }
+        console.log(agency);
+        // Define validation rules based on agency type
+        console.log("Validation Rule called");
+
+        const validationRules = {
+          common: {
+            email: validateEmail(newFormData.get("email")),
+            pNumber: validatePhoneNumber(newFormData.get("pNumber")),
+            image: validateImage(newFormData.get("image")),
+          },
+          company: {
+            name: validateMainName(
+              newFormData.get("companyName"),
+              4,
+              35,
+              "companyName"
+            ),
+            cacNo: validateCacNumber(newFormData.get("cacNo")),
+            address: validateAddress(newFormData.get("address")),
+          },
+          individual: {
+            fName: validateMainName(newFormData.get("fName"), 2, 15, "fName"),
+            lName: validateOtherName(newFormData.get("lName"), 2, 15, "lName"),
+          },
+        };
+        console.log("Validating Form Data");
+
+        // Validate form data
+        console.log("Validating Form Data");
+        const errors = {};
+        const rules = validationRules[agency];
+        Object.keys(rules).forEach((field) => {
+          errors[field] = rules[field];
+        });
+
+        // Merge common validation errors
+        const commonErrors = validationRules.common;
+        Object.keys(commonErrors).forEach((field) => {
+          if (!errors[field]) {
+            errors[field] = commonErrors[field];
+          }
+        });
+
+        // Check for validation errors
+        const errorFields = Object.keys(errors).filter(
+          (field) => errors[field] !== "passCheck"
+        );
+
+        console.log("errorFields", errorFields);
+        console.log("errors", errors);
+
+        // Check for internal server error
+        console.log("checking for server error");
+        // Check if any value in the errors object is equal to the desired error value
+        if (
+          Object.values(errors).some(
+            (error) => error === "internalValidationError"
+          )
+        ) {
+          // Handle the case where the desired error value is found
+          console.log("returning 500");
+          return new Response("Internal server error", { status: 500 });
+        }
+
+        console.log("checking for other error");
+        if (errorFields.length > 0) {
+          return new Response(
+            JSON.stringify({ error: "Validation failed", errors }),
+            { status: 400 }
           );
         }
 
-        if (existingAgentEmail) {
-          // If a document with the same email is found, return an error response
-          return new Response(
-            JSON.stringify({
-              error: `${nameType} email already exists"`,
-              errorType: "emailExist",
-            }),
-            {
-              status: 400,
-            }
-          );
-        }
+        // Check for internal server error
+        // if (errors.some((error) => error === 500)) {
+        //   return new Response("Internal Server Error", { status: 500 });
+        // }
 
-        if (existingAgentPhoneNumber) {
-          // If a document with the same email is found, return an error response
-          return new Response(
-            JSON.stringify({
-              error: `${nameType} number already exists"`,
-              errorType: "pNumberExist",
-            }),
-            {
-              status: 400,
-            }
-          );
+        for (const entry of newFormData.entries()) {
+          const [name, value] = entry;
+          // formData.append(name, value);
+          formData[name] = value;
         }
+        console.log(agency);
+        console.log(formData);
 
-        if (agency === "company" && existingAgentCacNo) {
-          // If a document with the same email is found, return an error response
-          return new Response(
-            JSON.stringify({
-              error: `Company Cac Number already exists"`,
-              errorType: "cacNoExist",
-            }),
-            {
-              status: 400,
-            }
-          );
-        }
-        const email = formData?.email;
-        const verificationMessage = await sendVerificationCode(email)
-          .then((result) => {
-            console.log("Verification code:", result?.verificationCode);
-            return result;
-          })
-          .catch((error) => {
-            console.error("Error", error);
+        // Form data is valid, proceed with processing
+        try {
+          await connectToDB();
+          const nameType = agency === "company" ? "Company" : "Agent";
+
+          console.log("nameType", nameType);
+          const existingAgentName = await Agent.findOne({
+            mainName: formData?.fName || formData?.companyName,
+          });
+          const existingAgentOtherName = await Agent.findOne({
+            otherName: formData?.lName,
           });
 
-        console.log("Verification Message", verificationMessage);
-        verificationData.code = verificationMessage.verificationCode;
-        verificationData.expTime = verificationMessage.expirationTime;
-        return new Response(
-          JSON.stringify({
-            success: true,
-            status: "awaitingEmailVerification",
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
+          const existingAgentEmail = await Agent.findOne({
+            email: formData?.email,
+          });
+          const existingAgentPhoneNumber = await Agent.findOne({
+            phoneNumber: formData?.pNumber,
+          });
+
+          const existingAgentCacNo = await Agent.findOne({
+            cacNo: formData?.cacNo,
+          });
+
+          const existingAgent = await Agent.findOne({
+            $and: [
+              { mainName: formData?.fName || formData?.companyName },
+              { otherName: formData?.lName },
+              { email: formData?.email },
+              { phoneNumber: formData?.pNumber },
+              { cacNo: formData?.cacNo },
+            ],
+          });
+
+          console.log(existingAgent);
+          if (existingAgent) {
+            const agentId = existingAgent._id;
+            console.log("Agent Exist and is being logged in");
+            // const returnRef = `${process.env.SITE_URL}/?r=${agentId}`;
+            try {
+              await SalesAgentKey.findByIdAndDelete(passId);
+            } catch (error) {
+              return new Response(
+                JSON.stringify({ success: true, type: "awaitConfirmation" }),
+                {
+                  status: 500,
+                }
+              );
+            }
+            resetData();
+
+            return new Response(
+              JSON.stringify({
+                success: true,
+                status: "verified",
+                ref: agentId,
+              }),
+              {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+              }
+            );
           }
-        );
-        // try {
-        // } catch (error) {
-        //   console.error("error sending mail", error);
-        // }
-        // Find the existing prompt by ID
-        // const existingPrompt = await Prompt.findById(params.id);
 
-        // if (!existingPrompt) {
-        //     return new Response("Prompt not found", { status: 404 });
-        // }
+          if (existingAgentName && existingAgentOtherName) {
+            // If a document with the same name is found, return an error response
+            const nameErrorType =
+              agency === "company" ? "nameExist" : "companyExist";
+            console.log(nameErrorType);
+            resetData();
+            return new Response(
+              JSON.stringify({
+                error: `${nameType} name already exists"`,
+                errorType: nameErrorType,
+              }),
+              {
+                status: 400,
+              }
+            );
+          }
 
-        // // Update the prompt with new data
-        // existingPrompt.prompt = prompt;
-        // existingPrompt.tag = tag;
+          if (existingAgentEmail) {
+            // If a document with the same email is found, return an error response
+            resetData();
+            return new Response(
+              JSON.stringify({
+                error: `${nameType} email already exists"`,
+                errorType: "emailExist",
+              }),
+              {
+                status: 400,
+              }
+            );
+          }
 
-        // await existingPrompt.save();
+          if (existingAgentPhoneNumber) {
+            // If a document with the same email is found, return an error response
+            resetData();
+            return new Response(
+              JSON.stringify({
+                error: `${nameType} number already exists"`,
+                errorType: "pNumberExist",
+              }),
+              {
+                status: 400,
+              }
+            );
+          }
 
-        // return new Response("Successfully updated the Prompts", { status: 200 });
+          if (agency === "company" && existingAgentCacNo) {
+            // If a document with the same email is found, return an error response
+            resetData();
+            return new Response(
+              JSON.stringify({
+                error: `Company Cac Number already exists"`,
+                errorType: "cacNoExist",
+              }),
+              {
+                status: 400,
+              }
+            );
+          }
+          const email = formData?.email;
+          const verificationMessage = await sendVerificationCode(email)
+            .then((result) => {
+              console.log("Verification code:", result?.verificationCode);
+              return result;
+            })
+            .catch((error) => {
+              console.error("Error", error);
+            });
+
+          console.log("Verification Message", verificationMessage);
+          verificationData.code = verificationMessage.verificationCode;
+          verificationData.expTime = verificationMessage.expirationTime;
+          return new Response(
+            JSON.stringify({
+              success: true,
+              status: "awaitingEmailVerification",
+            }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+          // try {
+          // } catch (error) {
+          //   console.error("error sending mail", error);
+          // }
+          // Find the existing prompt by ID
+          // const existingPrompt = await Prompt.findById(params.id);
+
+          // if (!existingPrompt) {
+          //     return new Response("Prompt not found", { status: 404 });
+          // }
+
+          // // Update the prompt with new data
+          // existingPrompt.prompt = prompt;
+          // existingPrompt.tag = tag;
+
+          // await existingPrompt.save();
+
+          // return new Response("Successfully updated the Prompts", { status: 200 });
+        } catch (error) {
+          console.error("Error validating with database", error);
+          return new Response("Error Performing Database Validation", {
+            status: 500,
+          });
+        }
       } catch (error) {
-        console.error("Error validating with database", error);
-        return new Response("Error Performing Database Validation", {
-          status: 500,
-        });
+        console.error(error);
       }
-    } else {
+    } else if (submissionState == "verification") {
       if (retryCountdown && new Date() > retryCountdown) {
         numberOfTries = 3; // Reset the number of retries
         retryCountdown = null; // Reset the countdown timer
       }
-      if (numberOfTries === 0)
+      if (numberOfTries <= 1)
         return new Response(
           JSON.stringify({
             error: "Max Number of Tries in 10 minutes used up",
@@ -760,9 +1019,20 @@ export const POST = async (request) => {
           }),
           { status: 403 }
         );
-      const requestData = await request.json();
-      console.log("requestData", requestData)
-      if (!requestData) {
+      // const requestBody = await request.json();
+      console.log(requestBody, newFormData);
+
+      if (!passId) {
+        return new Response(
+          JSON.stringify({
+            error: "PassKey is absent!",
+            errorType: "keyNull2",
+          }),
+          { status: 403 }
+        );
+      }
+
+      if (!requestBody) {
         resetData();
         return new Response(
           JSON.stringify({
@@ -772,7 +1042,7 @@ export const POST = async (request) => {
           { status: 400 }
         );
       }
-      const userVerificationCode = requestData?.verificationCode;
+      const userVerificationCode = requestBody?.verificationCode;
       if (!userVerificationCode)
         return new Response(
           JSON.stringify({
@@ -782,7 +1052,8 @@ export const POST = async (request) => {
           { status: 400 }
         );
       if (isCodeExpired(verificationData.expTime)) {
-        if (numberOfTries === 0) {
+        console.log("Code is expired", verificationData.expTime);
+        if (numberOfTries <= 1) {
           // If maximum number of tries reached, set the countdown timer
           retryCountdown = new Date(Date.now() + 30 * 60 * 1000); // Set countdown timer for 30 minutes
         }
@@ -800,7 +1071,7 @@ export const POST = async (request) => {
       const codeValidation = validateCode(userVerificationCode);
       console.log(codeValidation);
       if (!codeValidation.codeValid) {
-        if (numberOfTries === 0) {
+        if (numberOfTries <= 1) {
           // If maximum number of tries reached, set the countdown timer
           retryCountdown = new Date(Date.now() + 30 * 60 * 1000); // Set countdown timer for 30 minutes
         }
@@ -820,7 +1091,7 @@ export const POST = async (request) => {
         savedVerificationCode.toString()
       ) {
         console.log("crosschecking verification false");
-        if (numberOfTries === 0) {
+        if (numberOfTries <= 1) {
           // If maximum number of tries reached, set the countdown timer
           retryCountdown = new Date(Date.now() + 30 * 60 * 1000); // Set countdown timer for 30 minutes
         }
@@ -841,6 +1112,17 @@ export const POST = async (request) => {
       console.log(imagePath);
       try {
         await connectToDB();
+        const keyExist = await SalesAgentKey.findById(passId);
+
+        if (!keyExist) {
+          return new Response(
+            JSON.stringify({
+              error: "PassKey is absent!",
+              errorType: "keyAbsent",
+            }),
+            { status: 403 }
+          );
+        }
         const agentName = `${formData?.fName || formData?.companyName} ${
           formData?.lName
         }`;
@@ -859,6 +1141,27 @@ export const POST = async (request) => {
         await newAgent.save();
         const agentId = newAgent._id;
         console.log(agentId);
+        // const returnRef = `${process.env.SITE_URL}/?r=${agentId}`;
+        const keyStillExist = await SalesAgentKey.findById(passId);
+        if (!keyStillExist) {
+          return new Response(
+            JSON.stringify({
+              error: "PassKey is absent!",
+              errorType: "keyAbsent",
+            }),
+            { status: 403 }
+          );
+        }
+        try {
+          await SalesAgentKey.findByIdAndDelete(passId);
+        } catch (error) {
+          return new Response(
+            JSON.stringify({ success: true, type: "awaitConfirmation" }),
+            {
+              status: 500,
+            }
+          );
+        }
 
         resetData();
         return new Response(JSON.stringify({ success: true, ref: agentId }), {
@@ -891,10 +1194,24 @@ export const POST = async (request) => {
         // return new Response("Successfully updated the Prompts", { status: 200 });
       } catch (error) {
         console.error("Error contacting database", error);
-        return new Response("Error Creating Agent", { status: 500 });
+        return new Response(
+          JSON.stringify({ message: "Error Creating Agent", type: null }),
+          { status: 500 }
+        );
       }
+    } else {
+      return new Response(
+        JSON.stringify({
+          error: "Unknown submission state",
+          errorType: "invalidSubmission",
+        }),
+        { status: 400 }
+      );
     }
   } catch (error) {
-    return new Response("Internal Server Error", { status: 500 });
+    return new Response(
+      JSON.stringify({ message: "Internal Server Error", type: null }),
+      { status: 500 }
+    );
   }
 };

@@ -11,11 +11,12 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Loading from "./loading";
+import Footer from "@/components/Footer";
 
 export default function Home() {
   // const [projectButtonHovered, setProjectButtonHovered] = useState(false);
@@ -28,7 +29,7 @@ export default function Home() {
   const projectRef = useRef(null);
   const [activeSection, setActiveSection] = useState(null);
   const searchParams = useSearchParams();
-
+  const dataFetchedRef = useRef(false);
   const router = useRouter();
   const referrerId = searchParams.get("r");
   const referenceNo = searchParams.get("reference");
@@ -39,13 +40,13 @@ export default function Home() {
     toast.success(
       val || (
         <>
-          "Successfully Submitted Form" <br /> Thank you
+          Successfully Submitted Form <br /> Thank you
         </>
       ),
       {
         position: "top-right",
         autoClose: 5000,
-        hideProgressBar: false,
+        hideProgressBar: true,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
@@ -60,7 +61,7 @@ export default function Home() {
     toast.error(val, {
       position: "top-center",
       autoClose: 5000,
-      hideProgressBar: false,
+      hideProgressBar: true,
       closeOnClick: true,
       pauseOnHover: true,
       draggable: true,
@@ -70,21 +71,30 @@ export default function Home() {
       //  transition: Bounce,
     });
 
-  const handlePaymentProcess = async () => {
+  const handlePaymentProcess = useCallback(async () => {
     try {
-      console.log("Ready to handle payment")
+      console.log("Ready to handle payment");
       const refId = sessionStorage.getItem("referrerId") || "admin";
-      console.log("handling Payment...")
-      const response = await fetch(
-        `/api/paystack/webhook?reference=${referenceNo}&refererId=${refId}`,
-        {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      console.log("refId is:", refId);
+      console.log("handling Payment...");
+      // const response = await fetch(
+      //   `/api/paystack/webhook?reference=${referenceNo}&refererId=${refId}`,
+      //   {
+      //     method: "GET",
+      //     headers: { "Content-Type": "application/json" },
+      //   }
+      // );
+      const response = await fetch(`/api/paystack/webhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          referenceNo,
+          refId,
+        }),
+      });
 
       console.log(response);
-      console.log("Responding...")
+      console.log("Responding...");
 
       if (response.ok) {
         // const data = await response.json(); // Parse response JSON
@@ -96,9 +106,9 @@ export default function Home() {
           console.log("returning false for bad request");
           warn(
             "Invalid Reference Number. Check your email for receipt and contact Tido Empire"
-            );
-          }
-          if (response.status === 401) {
+          );
+        }
+        if (response.status === 401) {
           console.log("returning false for invalid request");
           warn(
             "Seems there was an error in payment. Check your email for receipt and contact Tido Empire"
@@ -110,8 +120,9 @@ export default function Home() {
       console.error("An error occurred", error);
       return false;
     }
-  };
-  const handleProjectHoverIn = () => {
+  }, [referenceNo]);
+
+  const handleProjectHoverIn = useCallback(() => {
     let dots = 0;
     let timer = 200;
 
@@ -125,11 +136,11 @@ export default function Home() {
     };
 
     addDot();
-  };
+  }, []);
 
-  const handleProjectHoverOut = () => {
+  const handleProjectHoverOut = useCallback(() => {
     setProjectButtonText("Read More");
-  };
+  }, []);
 
   const displayLetter = () => setLetterVisible(true);
   const hideLetter = () => setLetterVisible(false);
@@ -168,36 +179,33 @@ export default function Home() {
   // };
 
   useEffect(() => {
-    console.log(referenceNo);
+    if (!isLoading) return;
+    if (dataFetchedRef.current) return;
     const processPayment = async () => {
-      console.log("Processing Payment...")
-
+      console.log("Processing Payment...");
       try {
-        if (referenceNo) {
-          setPaymentProcessing(true);
-          const paymentStatus = await handlePaymentProcess();
-          console.log("paymentStatus:", paymentStatus);
-          if (paymentStatus) {
-            notify("Payment Successfully Made! Thank You for buying our form.");
-          } else {
-            warn(
-              "There was an error in payment processing. Please try again or contact Tido Empire with receipt."
-            );
-          }
+        setPaymentProcessing(true);
+        const paymentStatus = await handlePaymentProcess();
+        console.log("paymentStatus:", paymentStatus);
+        if (paymentStatus) {
+          notify("Payment Successfully Made! Thank You for buying our form.");
+        } else {
+          warn(
+            "There was an error in payment processing. Please try again or contact Tido Empire with receipt."
+          );
         }
-      console.log(" Payment Processed...")
-
+        console.log(" Payment Processed...");
       } catch (error) {
         console.error("Error Processing Payment", error);
       } finally {
-      console.log(" Payment Processed2...")
-
+        console.log(" Payment Processed2...");
         setPaymentProcessing(false);
       }
     };
 
-    processPayment();
-  }, [referenceNo]);
+    referenceNo && processPayment();
+    dataFetchedRef.current = true;
+  }, [referenceNo, handlePaymentProcess, isLoading]);
 
   useEffect(() => {
     console.log(referrerId);
@@ -209,7 +217,7 @@ export default function Home() {
     };
 
     saveReferrer();
-  }, [referrerId]);
+  }, [referrerId, router]);
 
   // useEffect(() => {
   //   const handleScroll = () => {
@@ -602,7 +610,7 @@ export default function Home() {
                   Tido Empire has come up with this modern architectural design
                   for the people of Gidan Daya Communities.
                 </p>
-                <div className="mt-7 md:mt-14 h-[200px] md:h-[400px] lg:h-[680px] w-[90%] overflow-clip max-md:w-full border-2 flex items-center justify-center border-sky-600 rounded-2xl">
+                <div className="mt-7 md:mt-14 h-[200px] md:h-[400px] lg:h-[680px] w-[90%] overflow-clip max-md:w-[97%] border-2 flex items-center justify-center border-sky-600 rounded-2xl">
                   <Suspense
                     fallback={<ConfirmationMessage message={"Loading."} />}
                   >
@@ -622,10 +630,13 @@ export default function Home() {
           >
             <FontAwesomeIcon icon={faArrowUp} />
           </button>
+          <div className="my-52 w-full text-base flex flex-col items-center text-center font-semibold md:text-lg text-white bg-blue-600 py-4 rounded-md">
+            <p>Want to become our Sales Agent? Contact Us Now</p>
 
-          <footer className="my-9 w-full text-sm flex flex-col items-center text-center font-semibold md:text-base">
-            Made with ❤️ by Afripul Group &copy; {currentYear}
-          </footer>
+            <a href="mailto:" className="hover:underline mt-3">Tido@empire.agent</a>
+          </div>
+
+          <Footer />
           {paymentProcessing && (
             <>
               <div className="w-full h-dvh fixed z-[999] flex items-center justify-center bg-black/70 top-0 left-0 gap-4">

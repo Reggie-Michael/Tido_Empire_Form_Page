@@ -1,10 +1,7 @@
 import { Schema, model, models } from "mongoose";
 
 const CustomerSchema = new Schema({
-  referrer: {
-    type: Schema.Types.ObjectId,
-    ref: "Agent",
-  },
+ 
   firstName: {
     type: String,
     required: [true, "First Name is required!"],
@@ -33,6 +30,10 @@ const CustomerSchema = new Schema({
     type: String,
     required: [true, "Purchase Reference Number is required"],
     unique: true,
+  },
+  referrer: {
+    type: Schema.Types.ObjectId,
+    ref: "Agent",
   },
   purchaseDate: {
     type: Date,

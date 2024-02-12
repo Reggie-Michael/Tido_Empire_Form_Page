@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Input } from "@material-tailwind/react";
 import Loading from "@/app/loading";
 import Navbar from "@/components/Navbar";
@@ -22,6 +22,7 @@ export default function Login() {
   const numberMinLength = 7;
   const numberMaxLength = 25;
   const [isLoading, setIsLoading] = useState(true);
+  const [passToken, setPassToken] = useState("");
   const [inputValues, setInputValues] = useState({
     fName: "",
     lName: "",
@@ -75,23 +76,78 @@ export default function Login() {
       type: "",
     },
   });
+  const [responseGotten, setResponseGotten] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const searchParams = useSearchParams();
 
   const agentMode = searchParams.get("agency");
+  const passKeyToken = searchParams.get("OiD");
   const errorStatus = searchParams.get("errorStatus");
+  const dataFetchedRef = useRef(false);
+
+  const verifyAccess = useCallback(async () => {
+    try {
+      const url = `/api/auth/agent_key`;
+  
+      const handleError = (status, data) => {
+        if (status === 400) {
+          router.push(`/access?errorStatus=${data.errorType}`);
+        } else if (status === 401) {
+          if (data.errorType === "authorizationHeaderMissing") {
+            warn("An Unexpected Error Occurred, Please Try again Later.");
+            setTimeout(() => router.push(`/access`), 500);
+          }
+          router.push(`/access?errorStatus=${data.errorType}`);
+        } else if (status === 403) {
+          // Handle 403 error if needed
+        } else if (status === 405) {
+          warn("Method not allowed");
+          router.push(`/access`);
+        } else if (status === 500) {
+          warn("An Unexpected Error Occurred, Please Try again Later.");
+          setTimeout(() => router.push(`/access`), 500);
+        }
+      };
+  
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          // Authorization: `Bearer ${passKeyToken}`,
+          "Content-Type": "application/json", // Optionally include other headers if needed
+        },
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        if (data.success) {
+          console.log("Token is valid");
+          setPassToken(data.key);
+        }
+      } else {
+        // Handle other HTTP errors
+        console.log(data)
+        handleError(response.status, data);
+
+      }
+    } catch (error) {
+      console.error("An error occurred", error);
+    } finally {
+      setResponseGotten(true);
+    }
+  }, [router]);
 
   const notify = (val) =>
     toast.success(
       val || (
         <>
-          "Successfully Submitted Form" <br /> Thank you
+          Successfully Submitted Form <br /> Thank you
         </>
       ),
       {
         position: "top-right",
         autoClose: 5000,
-        hideProgressBar: false,
+        hideProgressBar: true,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
@@ -106,7 +162,7 @@ export default function Login() {
     toast.error(val, {
       position: "top-center",
       autoClose: 5000,
-      hideProgressBar: false,
+      hideProgressBar: true,
       closeOnClick: true,
       pauseOnHover: true,
       draggable: true,
@@ -290,6 +346,65 @@ export default function Login() {
   };
 
   const handleFileChange = (e) => {
+    const validateImage = (image) => {
+      if (image) {
+        console.log(image);
+        const allowedImageTypes = ["jpg", "jpeg", "png"];
+
+        const isAllowedImageType = (file) => {
+          const fileType = file.type.toLowerCase();
+          const fileExtension = fileType.split("/")[1];
+          return allowedImageTypes.includes(fileExtension);
+        };
+
+        // Check file type
+        if (!image.type.startsWith("image") && !isAllowedImageType(image)) {
+          // setError((prev) => ({
+          //   ...prev,
+          //   validateError: {
+          //     state: true,
+          //     type: "imageValidateError",
+          //   },
+          // }));
+          const message = {
+            error: "validateError",
+            type: "imageValidateError",
+          };
+          return message;
+        }
+
+        // Check file size (max 5MB)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (image.size > maxSize) {
+          console.log(image.size);
+          // setError((prev) => ({
+          //   ...prev,
+          //   minMaxInvalid: {
+          //     state: true,
+          //     type: "",
+          //   },
+          // }));
+          const message = { error: "minMaxInvalid", type: "imageTooLarge" };
+          return message;
+        }
+
+        // Optionally check image dimensions
+        // For example, check if width and height are at least 100 pixels
+        // const img = new Image();
+        // img.onload = () => {
+        //   if (img.width < 100 || img.height < 100) {
+        //     setError("Image dimensions must be at least 100x100 pixels.");
+        //     return;
+        //   }
+        // };
+        // img.src = URL.createObjectURL(file);
+      } else {
+        const message = { error: "inputNull", type: "imageNull" };
+        setImagePreview(null);
+        return message;
+      }
+      return "passImageCheck";
+    };
     const file = e.target.files[0];
     // Clears image preview and input value on change
     setImagePreview(null);
@@ -344,160 +459,162 @@ export default function Login() {
   const isWithinLengthRange = (str, minLength, maxLength) =>
     str.length >= minLength && str.length <= maxLength;
 
-  const validateMainName = (name) => {
-    const minLength =
-      agency === "company" ? companyNameMinLength : nameMinLength;
-    const maxLength =
-      agency === "company" ? companyNameMaxLength : nameMaxLength;
-    const nameRegex = /^[a-zA-Z ]+$/;
-
-    let message = null;
-
-    if (!name) {
-      message = { error: "inputNull", type: "fNameNull" };
-    } else if (!isValidExpression(name, nameRegex)) {
-      message = { error: "validateError", type: "fNameValidateError" };
-    } else if (!isWithinLengthRange(name, minLength, maxLength)) {
-      message = { error: "minMaxInvalid", type: "fNameVoidCharLength" };
-    }
-
-    return message ? message : "passFNameCheck";
-  };
-  const validateOtherName = (name) => {
-    const minLength = nameMinLength;
-    const maxLength = nameMaxLength;
-    const nameRegex = /^[a-zA-Z ]+$/;
-
-    let message = null;
-    if (agency !== "company") {
-      if (!name) {
-        message = { error: "inputNull", type: "lNameNull" };
-      } else if (!isValidExpression(name, nameRegex)) {
-        message = { error: "validateError", type: "lNameValidateError" };
-      } else if (!isWithinLengthRange(name, minLength, maxLength)) {
-        message = { error: "minMaxInvalid", type: "lNameVoidCharLength" };
-      }
-    }
-
-    return message ? message : "passLNameCheck";
-  };
-  const validateEmail = (email) => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/i;
-
-    if (!email) {
-      return { error: "inputNull", type: "emailNull" };
-    } else if (!isValidExpression(email, emailRegex)) {
-      return { error: "validateError", type: "emailValidateError" };
-    }
-
-    return "passMailCheck";
-  };
-
-  const validateNumbers = (phoneNumber, cacNo, cacNoPresent) => {
-    const minLength = numberMinLength;
-    const maxLength = numberMaxLength;
-    const numberRegex = /^[0-9\+\-\ ]+$/;
-    const cacNoRegex = /^[0-9 ]+$/;
-
-    console.log(phoneNumber);
-    console.log("pNumber ready for val", readyForVerification.pNumber);
-    console.log(cacNoPresent);
-    let message = null;
-
-    console.log("phone number", !phoneNumber);
-    if (!phoneNumber) {
-      message = { error: "inputNull", type: "pNumberNull" };
-    } else if (!isValidExpression(phoneNumber, numberRegex)) {
-      message = { error: "validateError", type: "pNumberValidateError" };
-    } else if (!isWithinLengthRange(phoneNumber, minLength, maxLength)) {
-      message = { error: "minMaxInvalid", type: "pNumberVoidCharLength" };
-    }
-
-    if (cacNoPresent && !cacNo) {
-      message = { error: "inputNull", type: "cacNoNull" };
-    } else if (cacNoPresent && !isValidExpression(cacNo, cacNoRegex)) {
-      message = { error: "validateError", type: "cacNoValidateError" };
-    } else if (
-      cacNoPresent &&
-      !isWithinLengthRange(cacNo, minLength, maxLength)
-    ) {
-      message = { error: "minMaxInvalid", type: "cacNoVoidCharLength" };
-    }
-
-    console.log("from number val", message);
-    return message ? message : "passNumbersCheck";
-  };
-
-  const validateAddress = (address) => {
-    const addressRegex = /^[a-zA-Z0-9\+\-\@ ]+$/;
-
-    if (!address) {
-      return { error: "inputNull", type: "addressNull" };
-    } else if (!isValidExpression(address, addressRegex)) {
-      return { error: "validateError", type: "addressValidateError" };
-    }
-
-    return "passAddressCheck";
-  };
-
-  const validateImage = (image) => {
-    if (image) {
-      console.log(image);
-      const allowedImageTypes = ["jpg", "jpeg", "png"];
-
-      const isAllowedImageType = (file) => {
-        const fileType = file.type.toLowerCase();
-        const fileExtension = fileType.split("/")[1];
-        return allowedImageTypes.includes(fileExtension);
-      };
-
-      // Check file type
-      if (!image.type.startsWith("image") && !isAllowedImageType(image)) {
-        // setError((prev) => ({
-        //   ...prev,
-        //   validateError: {
-        //     state: true,
-        //     type: "imageValidateError",
-        //   },
-        // }));
-        const message = { error: "validateError", type: "imageValidateError" };
-        return message;
-      }
-
-      // Check file size (max 5MB)
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      if (image.size > maxSize) {
-        console.log(image.size);
-        // setError((prev) => ({
-        //   ...prev,
-        //   minMaxInvalid: {
-        //     state: true,
-        //     type: "",
-        //   },
-        // }));
-        const message = { error: "minMaxInvalid", type: "imageTooLarge" };
-        return message;
-      }
-
-      // Optionally check image dimensions
-      // For example, check if width and height are at least 100 pixels
-      // const img = new Image();
-      // img.onload = () => {
-      //   if (img.width < 100 || img.height < 100) {
-      //     setError("Image dimensions must be at least 100x100 pixels.");
-      //     return;
-      //   }
-      // };
-      // img.src = URL.createObjectURL(file);
-    } else {
-      const message = { error: "inputNull", type: "imageNull" };
-      setImagePreview(null);
-      return message;
-    }
-    return "passImageCheck";
-  };
-
   const validateInputs = useCallback(() => {
+    const validateMainName = (name) => {
+      const minLength =
+        agency === "company" ? companyNameMinLength : nameMinLength;
+      const maxLength =
+        agency === "company" ? companyNameMaxLength : nameMaxLength;
+      const nameRegex = /^[a-zA-Z ]+$/;
+
+      let message = null;
+
+      if (!name) {
+        message = { error: "inputNull", type: "fNameNull" };
+      } else if (!isValidExpression(name, nameRegex)) {
+        message = { error: "validateError", type: "fNameValidateError" };
+      } else if (!isWithinLengthRange(name, minLength, maxLength)) {
+        message = { error: "minMaxInvalid", type: "fNameVoidCharLength" };
+      }
+
+      return message ? message : "passFNameCheck";
+    };
+    const validateOtherName = (name) => {
+      const minLength = nameMinLength;
+      const maxLength = nameMaxLength;
+      const nameRegex = /^[a-zA-Z ]+$/;
+
+      let message = null;
+      if (agency !== "company") {
+        if (!name) {
+          message = { error: "inputNull", type: "lNameNull" };
+        } else if (!isValidExpression(name, nameRegex)) {
+          message = { error: "validateError", type: "lNameValidateError" };
+        } else if (!isWithinLengthRange(name, minLength, maxLength)) {
+          message = { error: "minMaxInvalid", type: "lNameVoidCharLength" };
+        }
+      }
+
+      return message ? message : "passLNameCheck";
+    };
+    const validateEmail = (email) => {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/i;
+
+      if (!email) {
+        return { error: "inputNull", type: "emailNull" };
+      } else if (!isValidExpression(email, emailRegex)) {
+        return { error: "validateError", type: "emailValidateError" };
+      }
+
+      return "passMailCheck";
+    };
+
+    const validateNumbers = (phoneNumber, cacNo, cacNoPresent) => {
+      const minLength = numberMinLength;
+      const maxLength = numberMaxLength;
+      const numberRegex = /^[0-9\+\-\ ]+$/;
+      const cacNoRegex = /^[0-9 ]+$/;
+
+      console.log(phoneNumber);
+      console.log("pNumber ready for val", readyForVerification.pNumber);
+      console.log(cacNoPresent);
+      let message = null;
+
+      console.log("phone number", !phoneNumber);
+      if (!phoneNumber) {
+        message = { error: "inputNull", type: "pNumberNull" };
+      } else if (!isValidExpression(phoneNumber, numberRegex)) {
+        message = { error: "validateError", type: "pNumberValidateError" };
+      } else if (!isWithinLengthRange(phoneNumber, minLength, maxLength)) {
+        message = { error: "minMaxInvalid", type: "pNumberVoidCharLength" };
+      }
+
+      if (cacNoPresent && !cacNo) {
+        message = { error: "inputNull", type: "cacNoNull" };
+      } else if (cacNoPresent && !isValidExpression(cacNo, cacNoRegex)) {
+        message = { error: "validateError", type: "cacNoValidateError" };
+      } else if (
+        cacNoPresent &&
+        !isWithinLengthRange(cacNo, minLength, maxLength)
+      ) {
+        message = { error: "minMaxInvalid", type: "cacNoVoidCharLength" };
+      }
+
+      console.log("from number val", message);
+      return message ? message : "passNumbersCheck";
+    };
+
+    const validateAddress = (address) => {
+      const addressRegex = /^[a-zA-Z0-9\+\-\@ ]+$/;
+
+      if (!address) {
+        return { error: "inputNull", type: "addressNull" };
+      } else if (!isValidExpression(address, addressRegex)) {
+        return { error: "validateError", type: "addressValidateError" };
+      }
+
+      return "passAddressCheck";
+    };
+
+    const validateImage = (image) => {
+      if (image) {
+        console.log(image);
+        const allowedImageTypes = ["jpg", "jpeg", "png"];
+
+        const isAllowedImageType = (file) => {
+          const fileType = file.type.toLowerCase();
+          const fileExtension = fileType.split("/")[1];
+          return allowedImageTypes.includes(fileExtension);
+        };
+
+        // Check file type
+        if (!image.type.startsWith("image") && !isAllowedImageType(image)) {
+          // setError((prev) => ({
+          //   ...prev,
+          //   validateError: {
+          //     state: true,
+          //     type: "imageValidateError",
+          //   },
+          // }));
+          const message = {
+            error: "validateError",
+            type: "imageValidateError",
+          };
+          return message;
+        }
+
+        // Check file size (max 5MB)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (image.size > maxSize) {
+          console.log(image.size);
+          // setError((prev) => ({
+          //   ...prev,
+          //   minMaxInvalid: {
+          //     state: true,
+          //     type: "",
+          //   },
+          // }));
+          const message = { error: "minMaxInvalid", type: "imageTooLarge" };
+          return message;
+        }
+
+        // Optionally check image dimensions
+        // For example, check if width and height are at least 100 pixels
+        // const img = new Image();
+        // img.onload = () => {
+        //   if (img.width < 100 || img.height < 100) {
+        //     setError("Image dimensions must be at least 100x100 pixels.");
+        //     return;
+        //   }
+        // };
+        // img.src = URL.createObjectURL(file);
+      } else {
+        const message = { error: "inputNull", type: "imageNull" };
+        setImagePreview(null);
+        return message;
+      }
+      return "passImageCheck";
+    };
     let allInputsValid = true;
     console.log("From validationCallback: Starting Validation");
 
@@ -651,7 +768,10 @@ export default function Login() {
         formData.append(key, inputValues[key]);
       });
       formData.append("agency", agency);
+      formData.append("passKey", passToken);
       try {
+        // Set up headers
+
         // Send the FormData object to the backend
         const response = await fetch("/api/auth/signup", {
           method: "POST",
@@ -687,9 +807,15 @@ export default function Login() {
           // Handle successful form submission
         } else {
           if (response.status == 400) {
-            setErrorStatus(data.errorType);
+            if (data.errorType === "invalidSubmission") {
+              warn("Submission State not valid");
+            } else {
+              setErrorStatus(data.errorType);
+            }
           }
           if (response.status == 403) {
+            if (data.errorType === "keyAbsent" || data.errorTpe === "keyNull2")
+            router.push(`/access?errorStatus=${data.errorType}`);
             setErrorStatus(data.errorType);
           }
           if (response.status == 500) {
@@ -715,30 +841,29 @@ export default function Login() {
     }
   };
 
-  const handleModeChange = (e) => {
-    const selectedValue = e.target.value;
-    // console.log(selectedValue);
-    setAgency(selectedValue);
-
-    // Perform any other actions based on the selected value if needed
-    // ...
-  };
-
   useEffect(() => {
     // Simulate fetching data
     console.log("mounted");
-    setTimeout(() => {
-      // Once data is loaded, update loading state
-      setIsLoading(false);
-    }, 1000); // Simulated delay of 2 seconds
-  }, []);
+    responseGotten && setIsLoading(false);
+  }, [responseGotten]);
+
+  useEffect(() => {
+    if (dataFetchedRef.current) return;
+    try {
+      console.log("active");
+      verifyAccess();
+      dataFetchedRef.current = true;
+    } catch (error) {
+      console.error("Error Verifying access", error);
+      warn("An unexpected error occurred! Refreshing...");
+      setTimeout(() => router.push("/admin/generate"), 1000);
+    }
+  }, [verifyAccess, router]);
 
   useEffect(() => {
     // Validation when key, agency, minimumLength, or maximumLength changes
-    console.log("From validate useEffect: ", readyForVerification);
     validateInputs();
 
-    console.log(error);
     // Cleanup function to clear error state
     return () => {
       setError((prev) => ({
@@ -761,16 +886,6 @@ export default function Login() {
       }));
     };
   }, [validateInputs]);
-
-  useEffect(() => {
-    if (agentMode === "individual" || agentMode === "company") {
-      setAgency(agentMode);
-    }
-    if (errorStatus) {
-      setErrorStatus(errorStatus);
-    }
-    router.push("/agent/login");
-  }, [agentMode, errorStatus]);
 
   const switchAgency = () => {
     agency === "company" ? setAgency("individual") : setAgency("company");
@@ -800,6 +915,16 @@ export default function Login() {
   };
 
   useEffect(() => {
+    if (agentMode === "individual" || agentMode === "company") {
+      setAgency(agentMode);
+    }
+    if (errorStatus) {
+      setErrorStatus(errorStatus);
+    }
+    router.push("/agent/login");
+  }, [agentMode, errorStatus, router]);
+
+  useEffect(() => {
     if (agency === "individual" || agency === "company") {
       // Clear the error state
       setError((prev) => ({
@@ -807,7 +932,6 @@ export default function Login() {
         errorState: false,
         agencyNull: false,
       }));
-      console.log(error);
     }
   }, [agency]);
 
@@ -856,7 +980,9 @@ export default function Login() {
         <div className="flex flex-col min:h-dvh w-full items-center  gap-5 animate__animated animate__zoomIn animate__faster relative">
           <Navbar className="text-black" actionLink={actionLink()} />
           <div className="flex flex-col items-center text-center gap-1 md:gap-3 mt-10  md:mt-20">
-            <h4 className="text-xl md:text-2xl leading-3 font-medium">Welcome To </h4>
+            <h4 className="text-xl md:text-2xl leading-3 font-medium">
+              Welcome To{" "}
+            </h4>
             <h1 className="text-3xl leading-10 md:leading-7 md:text-5xl lg:text-7xl text-blue-700 font-bold">
               Sales Agent SignUp
             </h1>
@@ -1088,28 +1214,27 @@ export default function Login() {
               className={`bg-blue-700 border-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-4 `}
               onClick={handleSubmit}
               disabled={
-                !agency || error.errorState || inputVoid() || submitting
+                !agency || error.errorState || inputVoid() || submitting || !responseGotten
               }
               loading={submitting}
             >
               Become an Agent
             </Button>
           </form>
-
         </div>
       )}
       <ToastContainer />
-          {submitting && (
-            <>
-              <div className="w-full h-full fixed z-[999] flex items-center justify-center bg-black/70 top-0 left-0 gap-4">
-                <div className="size-4 bg-transparent border-4 border-white border-r-0 border-l-0 border-t-0 rounded-xl box-content animate-spin"></div>
-                <ConfirmationMessage
-                className="w-96"
-                  message={"Creating Account..."}
-                />
-              </div>
-            </>
-          )}
+      {submitting && (
+        <>
+          <div className="w-full h-full fixed z-[999] flex items-center justify-center bg-black/70 top-0 left-0 gap-4">
+            <div className="size-4 bg-transparent border-4 border-white border-r-0 border-l-0 border-t-0 rounded-xl box-content animate-spin"></div>
+            <ConfirmationMessage
+              className="w-96"
+              message={"Creating Account..."}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

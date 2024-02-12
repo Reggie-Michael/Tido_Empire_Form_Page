@@ -27,15 +27,17 @@ export default function Agent() {
       if (!refLink && (success !== true || success !== false)) {
         router.push("/agent/login");
       } else {
-        setReferralLink(`http://localhost:3000?r=${refLink}`);
+        const currentURL = window.location.origin;
+        // console.log(currentURL);
+        setReferralLink(`${currentURL}/${refLink}`);
       }
     } catch (error) {
-      console.error();
+      console.error(error);
       router.push("/");
     } finally {
       setIsLoading(false);
     }
-  }, [refLink, success]);
+  }, [refLink, success, router]);
 
   // useEffect(() => {
   //   // Simulate fetching data

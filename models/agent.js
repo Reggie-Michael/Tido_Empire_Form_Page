@@ -37,7 +37,9 @@ const AgentSchema = new Schema({
     required: function () {
       return this.agency === "company";
     },
-    unique: true,
+    unique: function () {
+      return this.agency === "company";
+    },
   },
   image: String,
   referral: {
