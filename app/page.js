@@ -402,17 +402,17 @@ export default function Home() {
                     About Us
                   </h2>
                   <p className="text-gray-900 text-base leading-6 text-balance md:text-lg md:leading-8 lg:text-[23px] md:text-center font-medium lg:leading-10 md:text-pretty">
-                    Tido Empire registered under the corporate Affairs
-                    Commission (CAC) with the RC NO: 1707223 is a name
-                    synonymous with quality, timely delivery and reliability
-                    with products and individuals. <br />
-                    This reputation has earned us ample experience in building
-                    construction, road construction, construction of Dams and
-                    Drainages, Erosion control works, rural electrification,
-                    engineering and consulting services With our pool of
-                    technical and physical capacity, our highly experienced team
-                    are capable of delivering world class projects both locally
-                    and internationally.
+                    Tido Empire is a construction company registered under the
+                    Corporate Affairs Commission (CAC) with the RC NO:
+                    <span className="underline">1707223</span>. <br />
+                    The company is known for its quality, timely delivery, and
+                    reliability in building construction, road construction,
+                    construction of dams and drainages, erosion control works,
+                    rural electrification, engineering, and consulting services.
+                    <br />
+                    The company has a highly experienced team with a pool of
+                    technical and physical capacity capable of delivering
+                    world-class projects both locally and internationally.
                   </p>
                 </div>
               </div>
@@ -422,12 +422,12 @@ export default function Home() {
                     Our Vision
                   </h2>
                   <p className="text-gray-900 text-sm leading-6 text-balance md:text-lg md:leading-8 lg:text-[23px] break-words lg:leading-10 md:text-pretty">
-                    As a wholly indigenous company, we are desirous to take the
-                    construction industry of Nigeria to level compatible with
-                    what obtain elsewhere in the world. We are poise to towering
-                    high above others in the construction business. Hence, the
-                    reason for the beauty, quality and excellence we have
-                    recorded over the years.
+                    As a wholly indigenous company, we are desirous of taking
+                    the construction industry of Nigeria to a level compatible
+                    with that obtained elsewhere in the world. We are poised to
+                    tower high above others in the construction business, hence
+                    the reason for the beauty, quality, and excellence we have
+                    achieved over the years.
                   </p>
                 </div>
                 <div className="items-center justify-center flex bg-transparent col-span-5 md:col-span-1">
@@ -438,14 +438,13 @@ export default function Home() {
                     Our Strength
                   </h2>
                   <p className="text-gray-900 text-sm leading-6 text-balance md:text-lg md:leading-8 lg:text-[23px] break-words lg:leading-10 md:text-pretty">
-                    Professionalism remains our hallmark. The Company is
-                    surrounded with a cream of highly talented and equipped
-                    staff that are endowed with the needed expertise and fueled
-                    by the drive to deliver. Our machinery is next to none in
-                    the construction industry. Our successful performance in
-                    construction sector is supported by a client base of major
-                    players in the industry who have commended us on our ability
-                    remain consistent in delivery.
+                    Professionalism remains our hallmark. The company is staffed
+                    with highly talented and equipped professionals who possess
+                    the expertise and drive to deliver. Our machinery is next to
+                    none in construction industry. Our successful performance in
+                    the construction sector is supported by a client base of
+                    major players in the industry who have commended us for our
+                    consistent delivery.
                   </p>
                 </div>
               </div>
@@ -465,12 +464,12 @@ export default function Home() {
                     Project
                   </h2>
                   <p className="text-gray-900 text-base leading-6 text-balance md:text-lg md:leading-8 lg:text-[23px] md:text-center font-medium lg:leading-10 md:text-pretty">
-                    Dear valued stakeholders, We are excited to announce that
+                    Dear Valued Stakeholders, We are thrilled to announce that
                     Tido Empire International Limited has been awarded the
-                    contract to develop a modern market in the AMAC area
-                    council. This project is not just about building a market,
-                    it&apos;s about creating a sustainable future for
-                    generations to come.
+                    contract to develop a modern market at Gidan Daya in Abuja
+                    Municipal Area Council (AMAC). This project is not just
+                    about building a market; it&apos;s about creating a
+                    sustainable future for generations to come.
                   </p>
                   <button
                     type="button"
@@ -508,39 +507,37 @@ export default function Home() {
                           Dear valued stakeholders,
                         </h4>
                         <p className="text-white text-sm md:text-base leading-6 md:leading-7 whitespace-break-spaces">
-                          We are excited to announce that Tido Empire
+                          We are thrilled to announce that Tido Empire
                           International Limited has been awarded the contract to
-                          develop a modern market in the AMAC area council. This
-                          project is not just about building a market, it&apos;s
-                          about creating a sustainable future for generations to
-                          come.
+                          develop a modern market at Gidan Daya in Abuja
+                          Municipal Area Council (AMAC). This project is not
+                          just about building a market; it&apos;s about creating
+                          a sustainable future for generations to come.
                         </p>
                         <h6 className="text-white text-base md:text-lg leading-7 font-medium mb-1 md:mb-2">
                           The Need for a Modern Market
                         </h6>
                         <p className="text-white text-sm md:text-base leading-6 md:leading-7 whitespace-break-spaces">
-                          The existing market in the AMAC area council has
-                          served its purpose, but it&apos;s time for a change.
-                          We believe that a modern, fully-equipped, functional
-                          ultra-modern market of over 800 shops is the solution
-                          to the challenges faced by the old market. This new
-                          market will not only provide a better shopping
-                          experience for the community but also attract
-                          investors and create huge potentials aligned with
-                          global best practices.
+                          The existing market in AMAC has served its purpose,
+                          but it&apos;s time for a change. We believe that a
+                          modern, fully-equipped, functional ultra-modern market
+                          of over 800 shops is the solution to the challenges
+                          faced by the old market. This new market will not only
+                          provide a better shopping experience for the community
+                          but also attract investors and create huge potentials
+                          aligned with global best practices.
                         </p>
                         <h6 className="text-white text-base md:text-lg leading-7 font-medium mb-1 md:mb-2">
                           Our Vision for Sustainable Development
                         </h6>
                         <p className="text-white text-sm md:text-base leading-6 md:leading-7  whitespace-break-spaces">
                           This project is inspired by the need to chart a new
-                          course for sustainable development in the AMAC area
-                          council. We aim to mobilize resources for the
-                          development of critical and requisite infrastructure
-                          that will ensure inter-generational equity. By
-                          developing a modern market, we will boost the local
-                          economy, create jobs, and deliver the dividends of
-                          democracy.
+                          course for sustainable development in AMAC. We aim to
+                          mobilize resources for the development of critical and
+                          requisite infrastructure that will ensure
+                          inter-generational equity. By developing a modern
+                          market, we will boost the local economy, create jobs,
+                          and deliver the dividends of democracy.
                         </p>
                         <h6 className="text-white text-base md:text-lg leading-3 md:leading-7 font-medium mb-1 md:mb-2">
                           Our Capabilities
@@ -550,19 +547,17 @@ export default function Home() {
                           ready, financially capable, adequately equipped, and
                           professionally qualified to carry out this development
                           project. We will utilize the public-private
-                          partnership model, which is critical to helping your
-                          administration solve one of the most pressing
-                          financial and developmental challenges within the
-                          council.
+                          partnership model, which is critical to solve one of
+                          the most pressing financial and developmental
+                          challenges within the council.
                         </p>
                         <h6 className="text-white text-base md:text-lg leading-7 font-medium mb-1 md:mb-2">
                           The Benefits
                         </h6>
                         <div className="text-white text-sm md:text-base leading-6 md:leading-7 whitespace-break-spaces">
                           <p>
-                            This project will not only benefit the AMAC area
-                            council but also the entire community. <br />
-                            It will: <br />
+                            Benefits include the following but not limited to
+                            these: <br />
                           </p>
                           <ul className="list-inside list-disc">
                             <li>
@@ -570,10 +565,8 @@ export default function Home() {
                               aligned with global best practices.
                             </li>
                             <li>Boost the local economy and create jobs.</li>
-                            <li>
-                              Deliver the dividends of democracy Ensure
-                              inter-generational equity.
-                            </li>
+                            <li>Deliver the dividends of democracy.</li>
+                            <li>Ensure inter-generational equity.</li>
                           </ul>
                         </div>
                         <h6 className="text-white text-base md:text-lg leading-7 font-medium mb-1 md:mb-2">
@@ -583,8 +576,8 @@ export default function Home() {
                           We take this project seriously, and we are committed
                           to delivering a modern market that will stand the test
                           of time. We believe that this project will not only
-                          transform the AMAC area council but also set a new
-                          standard for sustainable development in Nigeria.
+                          transform AMAC but also set a new standard for
+                          sustainable development in Nigeria.
                         </p>
                         <p className="text-white text-sm md:text-base leading-6 md:leading-7 whitespace-break-spaces">
                           Thank you for your support, and we look forward to
@@ -592,8 +585,10 @@ export default function Home() {
                         </p>
                         <address className="text-white text-sm md:text-base leading-7 md:leading-8 mt-2 mb-1">
                           Sincerely, <br />
-                          Engr. Ebuka Sandra Ughasoro <br />
-                          Executive Chairman, Tido Empire International Limited
+                          Ebuka Sandra Ughasoro (Engr.)
+                          <br />
+                          CEO <br />
+                          Tido Empire International Limited
                         </address>
                       </div>
                     </div>
@@ -633,7 +628,9 @@ export default function Home() {
           <div className="my-52 w-full text-base flex flex-col items-center text-center font-semibold md:text-lg text-white bg-blue-600 py-4 rounded-md">
             <p>Want to become our Sales Agent? Contact Us Now</p>
 
-            <a href="mailto:" className="hover:underline mt-3">Tido@empire.agent</a>
+            <a href="mailto:" className="hover:underline mt-3">
+              Tido@empire.agent
+            </a>
           </div>
 
           <Footer />
