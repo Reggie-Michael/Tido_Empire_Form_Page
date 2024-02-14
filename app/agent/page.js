@@ -16,20 +16,27 @@ export default function Agent() {
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
   const [referralLink, setReferralLink] = useState("");
+  const [agencyKey, setAgencyKey] = useState("");
   const [copied, setCopied] = useState("");
 
   const success = searchParams.get("s");
+  const newAgencyKey = searchParams.get("k");
   const refLink = searchParams.get("r");
   // console.log(mode);
 
   useEffect(() => {
     try {
-      if (!refLink && (success !== true || success !== false)) {
+      if (
+        !refLink &&
+        !newAgencyKey &&
+        (success !== true || success !== false)
+      ) {
         router.push("/agent/login");
       } else {
         const currentURL = window.location.origin;
         // console.log(currentURL);
-        setReferralLink(`${currentURL}/${refLink}`);
+        setReferralLink(`${currentURL}/?r=${refLink}`);
+        setAgencyKey(`${newAgencyKey}`);
       }
     } catch (error) {
       console.error(error);
@@ -37,7 +44,7 @@ export default function Agent() {
     } finally {
       setIsLoading(false);
     }
-  }, [refLink, success, router]);
+  }, [refLink, success, newAgencyKey, router]);
 
   // useEffect(() => {
   //   // Simulate fetching data
@@ -51,6 +58,11 @@ export default function Agent() {
   const handleCopy = () => {
     setCopied(referralLink);
     navigator.clipboard.writeText(referralLink);
+    setTimeout(() => setCopied(false), 3000);
+  };
+  const handleCopy2 = () => {
+    setCopied(agencyKey);
+    navigator.clipboard.writeText(agencyKey);
     setTimeout(() => setCopied(false), 3000);
   };
 
@@ -72,10 +84,10 @@ export default function Agent() {
           <div className="mt-9 w-full flex items-center justify-center px-[2.5%]">
             <div className="border-2 flex flex-col gap-4  w-full md:w-1/2 lg:w-1/3 items-center text-center px-2 py-4  border-black border-opacity-20 focus-visible:border-opacity-100 focus-within:border-opacity-100">
               <p className="text-base md:text-xl font-medium">
-                Your Referral Link is:
+                Your Referral Link {agencyKey && "and Key"} is:
               </p>
-              <div className="flex relative w-full">
-                <p className="whitespace-nowrap overflow-auto">
+              <div className="flex relative w-full text-center items-center justify-center">
+                <p className="whitespace-nowrap overflow-x-auto overflow-y-hidden">
                   {referralLink ||
                     "finwifowfowfonofnofnwofn fklwnfnfnwnfownfnwofnwnflwnfonwofnwofnwonfownfownfonwofnwonfownfownfown"}
                 </p>
@@ -94,6 +106,27 @@ export default function Agent() {
                   />
                 </div>
               </div>
+               {agencyKey && <>
+                <p className="text-sm md:text-base font-medium">
+                   Agency Key 
+                </p>
+              <div className="flex relative w-full text-center items-center justify-center">
+                <p className="whitespace-nowrap overflow-x-auto overflow-y-hidden">{agencyKey}</p>
+                <div className="copy_btn" onClick={handleCopy2}>
+                  <Image
+                    src={
+                      copied === agencyKey
+                        ? "/assets/icons/tick.svg"
+                        : "/assets/icons/copy.svg"
+                    }
+                    alt={copied === agencyKey ? "tick_icon" : "copy_icon"}
+                    width={32}
+                    height={22}
+                    className="absolute right-0 -top-7 cursor-pointer"
+                  />
+                </div>
+              </div>
+               </>}
             </div>
           </div>
           <ToastContainer />

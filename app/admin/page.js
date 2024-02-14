@@ -41,7 +41,7 @@ export default function KeySubmission() {
   //   });
   const router = useRouter();
   const searchParams = useSearchParams();
-// let numberOfTries;
+  // let numberOfTries;
   const errorStatus = searchParams.get("errorStatus");
 
   const errorMessage = () => {
@@ -114,6 +114,7 @@ export default function KeySubmission() {
 
       if (response.ok) {
         // Key is valid, redirect to login page with token
+        
         if (data.checkStatus === "verified") {
           notify("Key is Valid. You will be redirected soon.");
           setTimeout(() => router.push(`/admin/generate`), 1000);
@@ -249,12 +250,17 @@ export default function KeySubmission() {
         <div className="flex flex-col h-dvh w-full items-center  gap-5">
           <Navbar className="text-black" />
           <div className="flex flex-col items-center text-center gap-3 mt-20 md:mt-30 lg:mt-40">
-            <h4 className="text-xl md:text-2xl leading-3 font-medium">Welcome To </h4>
+            <h4 className="text-xl md:text-2xl leading-3 font-medium">
+              Welcome To{" "}
+            </h4>
             <h1 className="text-3xl md:text-5xl lg:text-7xl leading-7 text-blue-700 font-bold">
               Admin Tab
             </h1>
           </div>
-          <form className="flex flex-col gap-10 w-full px-[2%] md:px-0 md:w-2/3 lg:w-1/3" onSubmit={handleSubmit}>
+          <form
+            className="flex flex-col gap-10 w-full px-[2%] md:px-0 md:w-2/3 lg:w-1/3"
+            onSubmit={handleSubmit}
+          >
             <div className="text-center text-base md:text-lg lg:text-xl font-medium">
               <h3 className="capitalize">Enter Admin Key</h3>
             </div>
@@ -320,7 +326,9 @@ export default function KeySubmission() {
 
           <div
             className={`flex gap-2 items-center justify-center text-center text-red-700 font-medium ${
-              error.errorState ? "text-base md:text-lg opacity-70" : "text-lg md:text-xl"
+              error.errorState
+                ? "text-base md:text-lg opacity-70"
+                : "text-lg md:text-xl"
             }`}
           >
             <div className="size-2 p-2 text-xs md:text-base md:p-4 hidden rounded-full bg-gray-500/30 md:flex items-center justify-center">

@@ -28,30 +28,30 @@ const AccessValidate = () => {
   const searchParams = useSearchParams();
 
   const notify = (message) =>
-  toast.success(message, {
-    position: "top-right",
-    autoClose: 5000,
-    hideProgressBar: true,
-    closeOnClick: true,
-    pauseOnHover: true,
-    draggable: true,
-    progress: undefined,
-    theme: "dark",
-    className: "text-lg break-all w-[400px]",
-  });
+    toast.success(message, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "dark",
+      className: "text-lg break-all w-[400px]",
+    });
 
-const warn = (message) =>
-  toast.error(message, {
-    position: "top-center",
-    autoClose: 5000,
-    hideProgressBar: true,
-    closeOnClick: true,
-    pauseOnHover: true,
-    draggable: true,
-    progress: undefined,
-    theme: "dark",
-    className: "text-lg break-all w-[400px]",
-  });
+  const warn = (message) =>
+    toast.error(message, {
+      position: "top-center",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "dark",
+      className: "text-lg break-all w-[400px]",
+    });
 
   const errorStatus = searchParams.get("errorStatus");
   const errorMessage = () => {
@@ -64,12 +64,16 @@ const warn = (message) =>
       //     return "Number of Tries elapsed. Please Try again Later.";
       case "unauthorized":
         return "Visited Route is Protected! Please fill in key first.";
+      case "unauthorizedCreation":
+        return "Agency cannot create other Agencies!";
       case "sessionExpired":
         return "Session has Expired! Please fill in key again.";
+      case "keyAbsent":
+        return "Key does not exist! Please try a new key.";
       case "keyNull":
         return "The Key cannot be null. Please fill in the key";
       case "keyNull2":
-        return "The Key was sent. Please fill in the key again";
+        return "The Key has reset. Please fill in the key again";
       case "validateError":
         return "Input must only contain letters and digits";
       case "minMaxInvalid":
@@ -104,6 +108,7 @@ const warn = (message) =>
       if (response.ok) {
         // Key is valid, redirect to login page with token
         if (data.success) {
+        
           notify("Key is Valid. You will be redirected soon.");
           setTimeout(() => router.push(`/agent/login?OiD=${data.key}`), 500);
         }
@@ -199,7 +204,9 @@ const warn = (message) =>
           <Navbar className="text-black" />
           <div className="flex flex-col w-full items-center">
             <div className="flex flex-col items-center text-center gap-5 mt-13 md:mt-20 mb-10">
-              <h4 className="text-xl md:text-2xl leading-3 font-medium">Welcome To </h4>
+              <h4 className="text-xl md:text-2xl leading-3 font-medium">
+                Welcome To{" "}
+              </h4>
               <h1 className="text-3xl md:text-5xl lg:text-7xl leading-7 text-blue-700 font-bold">
                 Sales Agent Tab
               </h1>
@@ -262,7 +269,9 @@ const warn = (message) =>
 
           <div
             className={`flex gap-2 items-center text-center justify-center text-green-500 font-medium justify-self-end mt-10 ${
-              error.errorState ? "text-base md:text-lg opacity-70" : "text-lg md:text-xl"
+              error.errorState
+                ? "text-base md:text-lg opacity-70"
+                : "text-lg md:text-xl"
             }`}
           >
             <div className="size-2 p-2 text-xs md:text-base md:p-4 hidden rounded-full bg-gray-500/30 md:flex items-center justify-center ">

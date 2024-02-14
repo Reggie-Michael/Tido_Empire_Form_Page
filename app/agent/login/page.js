@@ -22,7 +22,10 @@ export default function Login() {
   const numberMinLength = 7;
   const numberMaxLength = 25;
   const [isLoading, setIsLoading] = useState(true);
-  const [passToken, setPassToken] = useState("");
+  const [passToken, setPassToken] = useState({
+    keyId: "",
+    keyType: "",
+  });
   const [inputValues, setInputValues] = useState({
     fName: "",
     lName: "",
@@ -88,7 +91,7 @@ export default function Login() {
   const verifyAccess = useCallback(async () => {
     try {
       const url = `/api/auth/agent_key`;
-  
+
       const handleError = (status, data) => {
         if (status === 400) {
           router.push(`/access?errorStatus=${data.errorType}`);
@@ -108,27 +111,31 @@ export default function Login() {
           setTimeout(() => router.push(`/access`), 500);
         }
       };
-  
+
+      const passKey = JSON.parse(sessionStorage.getItem("passKey"));
       const response = await fetch(url, {
         method: "GET",
         headers: {
-          // Authorization: `Bearer ${passKeyToken}`,
+          Authorization: `Bearer ${passKey}`,
           "Content-Type": "application/json", // Optionally include other headers if needed
         },
       });
-  
+
       const data = await response.json();
-  
+
       if (response.ok) {
         if (data.success) {
           console.log("Token is valid");
-          setPassToken(data.key);
+          setPassToken((prevToken) => ({
+            ...prevToken,
+            keyId: data.key,
+            keyType: data.type,
+          }));
         }
       } else {
         // Handle other HTTP errors
-        console.log(data)
+        console.log(data);
         handleError(response.status, data);
-
       }
     } catch (error) {
       console.error("An error occurred", error);
@@ -768,7 +775,7 @@ export default function Login() {
         formData.append(key, inputValues[key]);
       });
       formData.append("agency", agency);
-      formData.append("passKey", passToken);
+      formData.append("passKeyData", JSON.stringify(passToken));
       try {
         // Set up headers
 
@@ -814,8 +821,13 @@ export default function Login() {
             }
           }
           if (response.status == 403) {
-            if (data.errorType === "keyAbsent" || data.errorTpe === "keyNull2")
-            router.push(`/access?errorStatus=${data.errorType}`);
+            if (
+              data.errorType === "keyAbsent" ||
+              data.errorType === "keyNull2" ||
+              data.errorType === "unauthorizedCreation"
+            ) {
+              router.push(`/access?errorStatus=${data.errorType}`);
+            }
             setErrorStatus(data.errorType);
           }
           if (response.status == 500) {
@@ -848,16 +860,37 @@ export default function Login() {
   }, [responseGotten]);
 
   useEffect(() => {
+    passKeyToken &&
+      sessionStorage.setItem("passKey", JSON.stringify(passKeyToken));
+  }, [passKeyToken]);
+
+  useEffect(() => {
     if (dataFetchedRef.current) return;
-    try {
-      console.log("active");
-      verifyAccess();
+
+    let isMounted = true; // Flag to track component mounting
+
+    if (isMounted) {
       dataFetchedRef.current = true;
-    } catch (error) {
-      console.error("Error Verifying access", error);
-      warn("An unexpected error occurred! Refreshing...");
-      setTimeout(() => router.push("/admin/generate"), 1000);
     }
+    const fetchData = async () => {
+      try {
+        console.log("Fetching data");
+        await verifyAccess();
+      } catch (error) {
+        console.error("Error fetching data", error);
+        // Handle error here (e.g., display error message)
+
+        warn("An unexpected error occurred! Refreshing...");
+        setTimeout(() => router.push("/admin/generate"), 1000);
+      }
+    };
+
+    fetchData();
+
+    // Cleanup function
+    return () => {
+      isMounted = false; // Mark component as unmounted
+    };
   }, [verifyAccess, router]);
 
   useEffect(() => {
@@ -1214,7 +1247,11 @@ export default function Login() {
               className={`bg-blue-700 border-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-4 `}
               onClick={handleSubmit}
               disabled={
-                !agency || error.errorState || inputVoid() || submitting || !responseGotten
+                !agency ||
+                error.errorState ||
+                inputVoid() ||
+                submitting ||
+                !responseGotten
               }
               loading={submitting}
             >

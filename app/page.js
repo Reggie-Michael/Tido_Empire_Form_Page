@@ -322,7 +322,7 @@ export default function Home() {
               Application Form
             </h4> */}
                 <h1 className="text-3xl md:text-5xl uppercase font-semibold text-center w-[70%] flex gap-2 md:gap-5 flex-col bg-gradient-to-br from-cyan-600 to-blue-600 bg-clip-text text-white mb-4 md:mb-9">
-                  AMAC Area <br />
+                  AMAC <br />
                   <span className="text-xl sm:text-2xl md:text-4xl">
                     Modern Market Project
                   </span>
@@ -338,7 +338,7 @@ export default function Home() {
                 Tido Empire International Limited
               </span>{" "}
               has been awarded the contract to develop a modern market in the
-              AMAC area council. This project is not just about building a
+              AMAC council. This project is not just about building a
               market; it's about creating a sustainable future for generations
               to come.
             </p> */}

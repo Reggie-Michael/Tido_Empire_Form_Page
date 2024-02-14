@@ -6,6 +6,8 @@ import { connectToDB } from "@/utils/database";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
 import SalesAgentKey from "@/models/agentKey";
+import jwt from "jsonwebtoken";
+const SECRET_KEY = process.env.SITE_SECRET; // Replace with your actual secret key
 
 const formData = {
   fName: "",
@@ -19,7 +21,10 @@ const formData = {
 };
 
 let agency;
-let passId;
+const passData = {
+  id: "",
+  type: "",
+};
 const verificationData = {
   code: "",
   expTime: "",
@@ -48,7 +53,8 @@ const resetData = () => {
   verificationData.code = "";
   verificationData.expTime = "";
   agency = "";
-  passId= "";
+  passData.id = "";
+  passData.type = "";
 };
 const validateMainName = (name) => {
   const minLength = inputLength.nameMinLength;
@@ -361,6 +367,50 @@ const isCodeExpired = (expirationTime) => {
   return currentTime > expirationTime;
 };
 
+const generateAgencyKey = async (type) => {
+  const token = jwt.sign({ keyId: process.env.ADMIN_KEY }, SECRET_KEY, {
+    expiresIn: "1h",
+  });
+  try {
+    // Make a GET request to the Paystack Transaction Verification API
+    const uri = `${process.env.SITE_URL}/api/generate_key?type=${type}`;
+    const response = await fetch(uri, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-Internal-API-Call": "true",
+      },
+    });
+
+    //     console.log(response);
+    // Check if the request was successful
+    if (response.ok) {
+      // Parse the response JSON
+      const data = await response.json();
+      // Return the transaction data
+      console.log("returning data ", data);
+      return {
+        success: true,
+        agentKey: data?.key,
+      };
+    } else {
+      // Handle error response
+      console.error("Error generating agency key:", response.status);
+      // console.log(response);
+      return {
+        success: false,
+        errorStatus: response.status,
+      };
+    }
+  } catch (error) {
+    console.error("An error occurred while generating agent key:", error);
+    return {
+      success: false,
+      errorStatus: 500,
+    };
+  }
+};
+
 export const GET = async (request) => {
   if (request.method !== "GET") {
     return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
@@ -518,10 +568,10 @@ export const POST = async (request) => {
       try {
         console.log("form Processing");
         // const newFormData = await request.formData();
-        const formDataKeys = Object.keys(formData);
-        const formDataMatch = formDataKeys.every(
-          (key) => formData[key] === newFormData.get(key)
-        );
+        // const formDataKeys = Object.keys(formData);
+        // const formDataMatch = formDataKeys.every(
+        //   (key) => formData[key] === newFormData.get(key)
+        // );
 
         console.log(newFormData);
         console.log(numberOfTries);
@@ -535,9 +585,13 @@ export const POST = async (request) => {
             }),
             { status: 403 }
           );
-        if (!passId) passId = newFormData.get("passKey");
-
-        if (!passId) {
+        // if (!passData.id) passData = newFormData.get("passKeyData");
+        if (!passData.id) {
+          const passKeyData = newFormData.get("passKeyData");
+          passData.id = passKeyData ? JSON.parse(passKeyData).keyId : null;
+          passData.type = passKeyData ? JSON.parse(passKeyData).keyType : null;
+        }
+        if (!passData.id) {
           return new Response(
             JSON.stringify({
               error: "PassKey is absent!",
@@ -553,6 +607,27 @@ export const POST = async (request) => {
           if (!verificationData.code || !verificationData.expTime) {
             try {
               await connectToDB();
+              const keyExist = await SalesAgentKey.findById(passData.id);
+
+              if (!keyExist) {
+                return new Response(
+                  JSON.stringify({
+                    error: "PassKey is absent!",
+                    errorType: "keyAbsent",
+                  }),
+                  { status: 403 }
+                );
+              }
+              if (keyExist.type == "agency" && agency == "company") {
+                resetData();
+                return new Response(
+                  JSON.stringify({
+                    error: "Agency cannot create other agency!",
+                    errorType: "unauthorizedCreation",
+                  }),
+                  { status: 403 }
+                );
+              }
               const nameType = agency === "company" ? "Company" : "Agent";
 
               console.log("nameType", nameType);
@@ -590,18 +665,20 @@ export const POST = async (request) => {
                 console.log("Agent Exist and is being logged in");
                 // const returnRef = `${process.env.SITE_URL}/?r=${agentId}`;
 
-                try {
-                  await SalesAgentKey.findByIdAndDelete(passId);
-                } catch (error) {
-                  return new Response(
-                    JSON.stringify({
-                      success: true,
-                      type: "awaitConfirmation",
-                    }),
-                    {
-                      status: 500,
-                    }
-                  );
+                if (passData.type !== "agency") {
+                  try {
+                    await SalesAgentKey.findByIdAndDelete(passData.id);
+                  } catch (error) {
+                    return new Response(
+                      JSON.stringify({
+                        success: true,
+                        type: "awaitConfirmation",
+                      }),
+                      {
+                        status: 500,
+                      }
+                    );
+                  }
                 }
                 resetData();
                 return new Response(
@@ -609,6 +686,7 @@ export const POST = async (request) => {
                     success: true,
                     status: "verified",
                     ref: agentId,
+                    key: existingAgent.key,
                   }),
                   {
                     status: 200,
@@ -738,6 +816,8 @@ export const POST = async (request) => {
             }
           );
         }
+
+        //     //
         agency = newFormData.get("agency");
         console.log("Checking Agency");
         if (!agency || !["company", "individual"].includes(agency)) {
@@ -837,6 +917,28 @@ export const POST = async (request) => {
         // Form data is valid, proceed with processing
         try {
           await connectToDB();
+          const keyExist = await SalesAgentKey.findById(passData.id);
+
+          if (!keyExist) {
+            return new Response(
+              JSON.stringify({
+                error: "PassKey is absent!",
+                errorType: "keyAbsent",
+              }),
+              { status: 403 }
+            );
+          }
+          if (keyExist.type == "agency" && agency == "company") {
+            resetData();
+
+            return new Response(
+              JSON.stringify({
+                error: "Agency cannot create other agency!",
+                errorType: "unauthorizedCreation",
+              }),
+              { status: 403 }
+            );
+          }
           const nameType = agency === "company" ? "Company" : "Agent";
 
           console.log("nameType", nameType);
@@ -873,15 +975,17 @@ export const POST = async (request) => {
             const agentId = existingAgent._id;
             console.log("Agent Exist and is being logged in");
             // const returnRef = `${process.env.SITE_URL}/?r=${agentId}`;
-            try {
-              await SalesAgentKey.findByIdAndDelete(passId);
-            } catch (error) {
-              return new Response(
-                JSON.stringify({ success: true, type: "awaitConfirmation" }),
-                {
-                  status: 500,
-                }
-              );
+            if (passData.type !== "agency") {
+              try {
+                await SalesAgentKey.findByIdAndDelete(passData.id);
+              } catch (error) {
+                return new Response(
+                  JSON.stringify({ success: true, type: "awaitConfirmation" }),
+                  {
+                    status: 500,
+                  }
+                );
+              }
             }
             resetData();
 
@@ -890,6 +994,7 @@ export const POST = async (request) => {
                 success: true,
                 status: "verified",
                 ref: agentId,
+                key: existingAgent.key,
               }),
               {
                 status: 200,
@@ -1022,7 +1127,7 @@ export const POST = async (request) => {
       // const requestBody = await request.json();
       console.log(requestBody, newFormData);
 
-      if (!passId) {
+      if (!passData.id) {
         return new Response(
           JSON.stringify({
             error: "PassKey is absent!",
@@ -1058,6 +1163,19 @@ export const POST = async (request) => {
           retryCountdown = new Date(Date.now() + 30 * 60 * 1000); // Set countdown timer for 30 minutes
         }
         numberOfTries--;
+        const email = formData?.email;
+        const verificationMessage = await sendVerificationCode(email)
+          .then((result) => {
+            console.log("Verification code:", result?.verificationCode);
+            return result;
+          })
+          .catch((error) => {
+            console.error("Error", error);
+          });
+
+        console.log("Verification Message", verificationMessage);
+        verificationData.code = verificationMessage.verificationCode;
+        verificationData.expTime = verificationMessage.expirationTime;
         return new Response(
           JSON.stringify({
             error: "Code is expired !",
@@ -1088,7 +1206,7 @@ export const POST = async (request) => {
 
       if (
         userVerificationCode.toString().trim() !==
-        savedVerificationCode.toString()
+        savedVerificationCode.toString().trim()
       ) {
         console.log("crosschecking verification false");
         if (numberOfTries <= 1) {
@@ -1096,6 +1214,18 @@ export const POST = async (request) => {
           retryCountdown = new Date(Date.now() + 30 * 60 * 1000); // Set countdown timer for 30 minutes
         }
         numberOfTries--;
+        const verificationMessage = await sendVerificationCode(email)
+          .then((result) => {
+            console.log("Verification code:", result?.verificationCode);
+            return result;
+          })
+          .catch((error) => {
+            console.error("Error", error);
+          });
+
+        console.log("Verification Message", verificationMessage);
+        verificationData.code = verificationMessage.verificationCode;
+        verificationData.expTime = verificationMessage.expirationTime;
         return new Response(
           JSON.stringify({ error: "Code is wrong", errorType: "invalidCode" }),
           { status: 400 }
@@ -1112,8 +1242,9 @@ export const POST = async (request) => {
       console.log(imagePath);
       try {
         await connectToDB();
-        const keyExist = await SalesAgentKey.findById(passId);
+        const keyExist = await SalesAgentKey.findById(passData.id);
 
+        console.log("keyExist:", keyExist);
         if (!keyExist) {
           return new Response(
             JSON.stringify({
@@ -1123,6 +1254,43 @@ export const POST = async (request) => {
             { status: 403 }
           );
         }
+        if (keyExist.type == "agency" && agency == "company") {
+          resetData();
+
+          return new Response(
+            JSON.stringify({
+              error: "Agency cannot create other agency!",
+              errorType: "unauthorizedCreation",
+            }),
+            { status: 403 }
+          );
+        }
+        const agencyKey =
+          agency === "company" ? await generateAgencyKey("agency") : null;
+        if (agencyKey === 500 || typeof agencyKey == "number") {
+          return new Response(
+            JSON.stringify({ success: false, type: "keyGenError" }),
+            {
+              status: 500,
+            }
+          );
+        }
+        const company = await Agent.findOne({ key: keyExist.key });
+        console.log(company, !company);
+        const companyKey =
+          agency !== "company" && keyExist.type == "agency"
+            ? passData?.id
+            : null;
+        const companyRelationId =
+          !company || company == null ? company : company?._id;
+
+        console.log(
+          "CompanyKey and Id and companyRelation:",
+          companyKey,
+          keyExist._id,
+          companyRelationId
+        );
+
         const agentName = `${formData?.fName || formData?.companyName} ${
           formData?.lName
         }`;
@@ -1135,14 +1303,20 @@ export const POST = async (request) => {
           email: formData?.email,
           cacNo: formData?.cacNo,
           image: imagePath,
+          key: agency == "company" ? agencyKey.agentKey : "",
+          companyKeyId: companyKey,
+          companyKey: keyExist.type == "agency" ? keyExist.key : null,
+          companyRelation: company ? company._id : null,
           referral: `${agentName}_ref_120`,
           creationDate: new Date().toISOString(),
         });
+        console.log("newAgent", newAgent);
         await newAgent.save();
         const agentId = newAgent._id;
         console.log(agentId);
         // const returnRef = `${process.env.SITE_URL}/?r=${agentId}`;
-        const keyStillExist = await SalesAgentKey.findById(passId);
+        const keyStillExist = await SalesAgentKey.findById(passData.id);
+        console.log("keyStillExist", keyStillExist);
         if (!keyStillExist) {
           return new Response(
             JSON.stringify({
@@ -1152,22 +1326,27 @@ export const POST = async (request) => {
             { status: 403 }
           );
         }
-        try {
-          await SalesAgentKey.findByIdAndDelete(passId);
-        } catch (error) {
-          return new Response(
-            JSON.stringify({ success: true, type: "awaitConfirmation" }),
-            {
-              status: 500,
-            }
-          );
+        if (passData.type !== "agency") {
+          try {
+            await SalesAgentKey.findByIdAndDelete(passData.id);
+          } catch (error) {
+            return new Response(
+              JSON.stringify({ success: true, type: "awaitConfirmation" }),
+              {
+                status: 500,
+              }
+            );
+          }
         }
 
         resetData();
-        return new Response(JSON.stringify({ success: true, ref: agentId }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ success: true, ref: agentId, key: newAgent.key }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
         // const combinedData = `${agentId}-${agentName}`;
 
         // Use the combined data as the secret key for hashing

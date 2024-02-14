@@ -10,11 +10,16 @@ const KeySchema = new Schema({
     ],
     unique: true,
   },
+
+  type: {
+    type: String,
+    required: [true, "Key Type is required."],
+    default: "default",
+  },
   creationDate: {
     type: Date,
     required: [true, "Creation Date is required."],
     default: Date.now,
-    unique: true,
   },
   expirationDate: {
     type: Date,
@@ -25,6 +30,27 @@ const KeySchema = new Schema({
     default: false,
   },
 });
+
+//  // Middleware to check expiration before saving
+// SalesKeySchema.pre("save", function (next) {
+//   if (this.expirationDate < new Date()) {
+//     this.expired = true;
+//   }
+//   next();
+// });
+
+// // Define a cron job to update expired keys
+// cron.schedule("0 0 * * *", async () => {
+//   try {
+//     const expiredKeys = await SalesKey.find({ expirationDate: { $lt: new Date() } });
+//     for (const key of expiredKeys) {
+//       key.expired = true;
+//       await key.save();
+//     }
+//   } catch (error) {
+//     console.error("Error updating expired keys:", error);
+//   }
+// });
 
 const SalesAgentKey = models.Key || model("Key", KeySchema);
 

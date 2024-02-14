@@ -1,7 +1,9 @@
 "use client";
 import Loading from "@/app/loading";
 import ConfirmationMessage from "@/components/Confirmation";
-import { Button } from "@material-tailwind/react";
+import { faInfo } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Button, Input } from "@material-tailwind/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,19 +13,23 @@ import "react-toastify/dist/ReactToastify.css";
 
 const MAX_TRIES = 2;
 const COUNTDOWN_DURATION = 10 * 60 * 1000;
-const KeyGen = () => {
+const KeyDelete = () => {
+  const minimumLength = 12;
+  const maximumLength = 20;
   const router = useRouter();
   const [passToken, setPassToken] = useState("");
-  const [generatedKey, setGeneratedKey] = useState("");
-  const [agentKeyType, setAgentKeyType] = useState("default");
+  const [key, setKey] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [responseGotten, setResponseGotten] = useState(false);
+  const [readyForVerification, setReadyForVerification] = useState(false);
   const [remainingTries, setRemainingTries] = useState(MAX_TRIES);
   const [remainingTime, setRemainingTime] = useState(COUNTDOWN_DURATION);
   const [countdownExpired, setCountdownExpired] = useState(false);
-  const [copied, setCopied] = useState("");
-
+  const [error, setError] = useState({
+    errorState: false,
+    type: "",
+  });
   //   const searchParams = useSearchParams();
   const dataFetchedRef = useRef(false);
   //   let responseGotten = false;
@@ -59,7 +65,7 @@ const KeyGen = () => {
           warn("An Unexpected Error Occurred, Please Try again Later.");
           setTimeout(() => router.push(`/admin`), 500);
         }
-        console.error("Error:", error);
+     //    console.error("Error:", error);
       };
 
       const response = await fetch(url, {
@@ -87,7 +93,7 @@ const KeyGen = () => {
     } finally {
       setResponseGotten(true);
     }
-  }, [passToken, router, setPassToken, setResponseGotten]);
+  }, [passToken, router]);
 
   const notify = (val) =>
     toast.success(
@@ -123,27 +129,68 @@ const KeyGen = () => {
       className: "text-lg break-all  w-[400px]",
       //  transition: Bounce,
     });
+  const errorMessage = () => {
+    switch (error.type) {
+      case "invalidKey":
+        return "The inputted key is wrong. Please Try again Later.";
+      case "expiredKey":
+        return "The inputted key is expired. Please Input key and try again.";
+      case "maxTriesOverlapped":
+        return "Number of Tries elapsed. Please Try again Later.";
+      case "keyNull":
+        return "The Key cannot be null. Please fill in the key";
+      case "validateError":
+        return "Input must only contain letters and digits";
+      case "minMaxInvalid":
+        return `Key must contain a minimum length of ${minimumLength} and max of ${maximumLength} `;
+      default:
+        return "Please try again later";
+    }
+  };
   //   const token = searchParams.get("token");
 
   // This will not be logged on the server when using static rendering
   // console.log(search)
+  const validateKey = useCallback(() => {
+    //     let allInputsValid = true;
+    const inputLength = key?.length;
+    const containsNonAlphaNumeric = /[^a-zA-Z0-9]/.test(key);
 
-  const generateKey = async (e) => {
+    // Validation logic...
+
+    // Check if key is missing
+    if (!key) {
+      setError({ errorState: true, type: "keyNull" });
+      return false;
+    } else if (inputLength < minimumLength || inputLength > maximumLength) {
+      setError({ errorState: true, type: "minMaxInvalid" });
+      return false;
+    } else if (containsNonAlphaNumeric) {
+      setError({ errorState: true, type: "validateError" });
+      return false;
+    } else {
+      setError({ errorState: false, type: "" });
+      return true;
+    }
+  }, [key, minimumLength, maximumLength]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (remainingTries === 0) {
       startCountdown();
       return;
     }
+    console.log(validateKey());
+    if (!validateKey()) {
+      return;
+    }
     try {
-      const url =
-        agentKeyType === "agency"
-          ? `/api/generate_key?type=agency`
-          : `/api/generate_key`;
+      const url = `/api/generate_key/${key}`;
       setSubmitting(true);
       // console.log(new URLSearchParams(dataToSend));
       // console.log(dataToSend.token);
       const response = await fetch(url, {
-        method: "GET",
+        method: "DELETE",
         headers: {
           Authorization: `Bearer ${passToken}`,
           "Content-Type": "application/json", // Optionally include other headers if needed
@@ -163,8 +210,7 @@ const KeyGen = () => {
         //     // Redirect or handle as needed
         //   }
 
-        notify("Backend successfully generated key");
-        setGeneratedKey(data?.key);
+        notify("Sales Agent Key successfully deleted!");
         setRemainingTries((tries) => tries - 1);
         if (remainingTries === 0) {
           startCountdown();
@@ -173,16 +219,20 @@ const KeyGen = () => {
       } else {
         // Handle other HTTP errors
         if (response.status == 400) {
-          data.state === "redirect" &&
+          if (data.state === "redirect") {
             router.push(`/admin?errorStatus=${data.errorType}`);
+          } else {
+            setError((prevState) => ({
+              ...prevState,
+              errorState: true,
+              type: data.errorType,
+            }));
+          }
         } else if (response.status == 401) {
-          if (
-            data.errorType !== "authorizationHeaderMissing" &&
-            data.state === "redirect"
-          ) {
+          if (data.errorType !== "authorizationHeaderMissing") {
             warn("Forbidden route you will be redirected soon.");
             setTimeout(() => {
-              router.push(`/admin`);
+              router.push(`/admin?errorStatus=${data.errorType}`);
             }, 1000);
           } else {
             warn("An Unexpected Error Occurred, Please Try again Later.");
@@ -194,6 +244,8 @@ const KeyGen = () => {
               router.push(`/admin`);
             }, 1000);
           }
+        } else if (response.status === 404) {
+          warn("No such Key Exist!");
         } else if (response.status === 405) {
           warn("Method not allowed");
         } else if (response.status == 500) {
@@ -202,22 +254,37 @@ const KeyGen = () => {
         console.error("Error:", response.statusText);
       }
     } catch (error) {
-      warn("Retrying...");
+      warn("An unexpected Error occurred! Please Try again Later.");
       //  setTimeout(() => {
       //    generateKey(); // Retry after a delay
       //  }, 1000);
       console.error("An error occurred", error);
     } finally {
       console.log("Key generated");
-       setSubmitting(false);
+      setSubmitting(false);
+      setKey("");
     }
   };
 
-  const handleCopy = () => {
-    setCopied(generatedKey);
-    navigator.clipboard.writeText(generatedKey);
-    setTimeout(() => setCopied(false), 3000);
+  const handleKeyChange = (e) => {
+    const value = e.target.value;
+    setKey(value);
+    if (key.length >= 6) setReadyForVerification(true);
+    console.log(readyForVerification);
   };
+
+  useEffect(() => {
+    // Validation when key, role, minimumLength, or maximumLength changes
+    readyForVerification && validateKey();
+
+    // Cleanup function to clear error state
+    return () => {
+      setError({
+        errorState: false,
+        type: "",
+      });
+    };
+  }, [validateKey, readyForVerification]);
 
   const startCountdown = () => {
     setCountdownExpired(false);
@@ -254,15 +321,6 @@ const KeyGen = () => {
       startCountdown();
     }
   }, [remainingTries]);
-
-  const handleModeChange = (e) => {
-        const selectedValue = e.target.value;
-        // console.log(selectedValue);
-        setAgentKeyType(selectedValue);
-    
-        // Perform any other actions based on the selected value if needed
-        // ...
-      };
 
   //   useEffect(() => {
   //     setTimeout(() => setIsLoading(false), 1000);
@@ -301,45 +359,24 @@ const KeyGen = () => {
         <Loading />
       ) : (
         <div className="min-h-[400px] h-dvh pb-10 flex flex-col">
-          <header className="w-full flex items-center justify-between py-5 md:py-10 px-[3%]">
+          <header className="w-full flex items-center justify-center py-5 md:py-10 px-[3%]">
             <Link
               href="/"
               className="logo flex items-center font-inter text-xl md:text-2xl lg:text-4xl font-bold text-blue-600 hover:opacity-75"
             >
               {/* <Image
-      src={"/assets/images/LOGO-writeup-1-White 1.svg"}
-      width={152}
-      height={57}
-      alt="Logo"
-      className="object-contain object-bottom"
-    /> */}
+                    src={"/assets/images/LOGO-writeup-1-White 1.svg"}
+                    width={152}
+                    height={57}
+                    alt="Logo"
+                    className="object-contain object-bottom"
+               /> */}
               Tido Empire
             </Link>
-            <div className="w-1/2 flex  items-end justify-end">
-              <form
-                className={`flex md:gap-4 items-center flex-col md:flex-row gap-2 font-medium`}
-              >
-                <label htmlFor="mode" className="text-base md:text-xl">
-                  Select Key Type:
-                </label>
-                <select
-                  name="modeSelect"
-                  id="mode"
-                  title="set mode"
-                  onChange={handleModeChange}
-                  value={agentKeyType}
-                  className="border-2 border-opacity-20 border-black focus:border-opacity-100 w-20 md:w-40 text-xs sm:text-sm md:text-base"
-                >
-                  {/* {role === "" && <option value="">...</option>} */}
-                  <option value="default">Default</option>
-                  <option value="agency">Agency</option>
-                </select>
-              </form>
-            </div>
           </header>
           <div className="flex flex-col gap-3 sm:gap-5 md:gap-10 items-center mt-20 lg:mt-32  flex-1 w-full">
             <h1 className="text-lg font-medium md:text-2xl">
-              Generate Sales Agent Key
+              Delete Sales Agent Key
             </h1>
             {/* {error.errorState && (
               <div
@@ -355,46 +392,34 @@ const KeyGen = () => {
                 <p className="w-fit">{errorMessage()}</p>
               </div>
             )} */}
-
-            {generatedKey && (
-              <div className="mt-9 w-full flex items-center justify-center px-[2.5%]">
-                <div className="border-2 flex flex-col gap-3 md:gap-6 w-full md:w-1/2 lg:w-1/3 items-center text-center px-2 py-4  border-black border-opacity-20 focus-visible:border-opacity-100 focus-within:border-opacity-100">
-                  <p className="text-base md:text-lg font-medium">
-                    Generated Sales Agent Key:
-                  </p>
-                  <div className="flex relative w-full text-center items-center justify-center">
-                    <p className="whitespace-nowrap underline underline-offset-2 text-blue-700">
-                      {generatedKey}
-                    </p>
-
-                    <div className="copy_btn" onClick={handleCopy}>
-                      <Image
-                        src={
-                          copied === generatedKey
-                            ? "/assets/icons/tick.svg"
-                            : "/assets/icons/copy.svg"
-                        }
-                        alt={
-                          copied === generatedKey ? "tick_icon" : "copy_icon"
-                        }
-                        width={32}
-                        height={22}
-                        className="absolute right-0 -top-7 cursor-pointer text-blue-500"
-                      />
-                    </div>
-                  </div>
+            <div className="flex gap-5 w-full px-[2%] sm:w-4/5 md:w-3/5 lg:1/4">
+              <Input
+                type="text"
+                disabled={submitting || remainingTries === 0 || !responseGotten}
+                value={key}
+                onChange={handleKeyChange}
+                autoFocus={true}
+                className="border-2 text-center size-10 disabled:opacity-25 disabled:cursor-not-allowed text-base font-medium sm:text-lg"
+                placeholder="Enter Agent Key"
+              />
+            </div>
+            {error.errorState && (
+              <div className="flex gap-2 items-center justify-center text-red-700 font-medium text-base md:text-lg lg:text-xl">
+                <div className="size-2 p-2 text-xs md:p-4 md:text-base rounded-full bg-gray-500/30 flex items-center justify-center">
+                  <FontAwesomeIcon icon={faInfo} />
                 </div>
+                <p className="w-fit">{errorMessage()}</p>
               </div>
             )}
             <Button
               type="submit"
-              className={`bg-blue-700 border-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-4 px-[2%] w-1/4  lg:1/5`}
-              onClick={generateKey}
-              title="generate key"
+              className={`bg-red-700 border-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-4 px-[2%] w-1/4  lg:1/5`}
+              onClick={handleSubmit}
+              title="delete agent key"
               disabled={submitting || remainingTries === 0 || !responseGotten}
               loading={submitting}
             >
-              Generate Key
+              Delete Agent Key
             </Button>
           </div>
           <ToastContainer />
@@ -427,7 +452,7 @@ const KeyGen = () => {
                 <div className="size-4 bg-transparent border-4 border-white border-r-0 border-l-0 border-t-0 rounded-xl box-content animate-spin"></div>
                 <ConfirmationMessage
                   className="w-96"
-                  message={"Generating Key..."}
+                  message={"Deleting Key..."}
                 />
               </div>
             </>
@@ -445,15 +470,10 @@ const KeyGen = () => {
               </div>
             </div>
           )}
-          <div className="flex text-red-600 font-medium px-4 text-base md:text-xl mt-10">
-            <Link href={"/admin/delete"}>
-              Delete Key
-            </Link>
-          </div>
         </div>
       )}
     </div>
   );
 };
 
-export default KeyGen;
+export default KeyDelete;

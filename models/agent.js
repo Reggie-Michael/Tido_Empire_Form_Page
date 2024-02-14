@@ -47,13 +47,37 @@ const AgentSchema = new Schema({
     default: "admin1234",
     unique: true,
   },
-  referredData: [{
-    type: Schema.Types.ObjectId,
-    ref: "Customer",
-  }],
+  referredData: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Customer",
+    },
+  ],
   referredLength: {
     type: Number,
     default: 0,
+  },
+  key: {
+    type: String,
+    required: function () {
+      return this.agency === "company";
+    },
+  },
+  companyRelation: {
+    type: Schema.Types.ObjectId,
+    ref: "Agent",
+    required: function () {
+      return this.agency === "individual";
+    },
+    
+  },
+  companyKeyId: {
+    type: Schema.Types.ObjectId,
+    ref: "Key",
+  },
+  companyKey: {
+    type: String,
+    ref: "Key",
   },
   creationDate: {
     type: Date,

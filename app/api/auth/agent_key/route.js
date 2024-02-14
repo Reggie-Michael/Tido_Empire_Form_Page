@@ -3,9 +3,12 @@ import { connectToDB } from "@/utils/database";
 import jwt from "jsonwebtoken";
 
 const savedKeyData = {
-  keyId: "",
+  keyData: "",
+  // keyType: "",
   verified: false,
 };
+
+// const resetData
 const SECRET_KEY = process.env.SITE_SECRET; // Replace with your actual secret key
 
 const validateKey = (key) => {
@@ -54,24 +57,24 @@ export const GET = async (request) => {
     //         }),
     //         { status: 403 }
     //       );
-    //     const authHeader = request.headers.get("Authorization");
-    //     if (!authHeader) {
-    //       return new Response(
-    //         JSON.stringify({
-    //           error: "Authorization header missing",
-    //           errorType: "authorizationHeaderMissing",
-    //         }),
-    //         {
-    //           status: 401,
-    //         }
-    //       );
-    //     }
-    //     // Extract the token from the Authorization header
-    //     const passKey = authHeader.split(" ")[1];
+        const authHeader = request.headers.get("Authorization");
+        if (!authHeader) {
+          return new Response(
+            JSON.stringify({
+              error: "Authorization header missing",
+              errorType: "authorizationHeaderMissing",
+            }),
+            {
+              status: 401,
+            }
+          );
+        }
+        // Extract the token from the Authorization header
+        const passKey = authHeader.split(" ")[1];
     //     console.log("passKey", passKey);
-    const encodedKeyId = savedKeyData.keyId;
-    console.log(!encodedKeyId);
-    if (!encodedKeyId || encodedKeyId == null || encodedKeyId === undefined) {
+    const encodedKeyData = savedKeyData.keyData || passKey;
+    console.log(!encodedKeyData, encodedKeyData);
+    if (!encodedKeyData || encodedKeyData == null || encodedKeyData === undefined) {
       console.log("returning unauthorized");
       return new Response(
         JSON.stringify({
@@ -81,12 +84,13 @@ export const GET = async (request) => {
         { status: 401 }
       );
     }
-    const decodedKey = jwt.verify(encodedKeyId, SECRET_KEY);
+    const decodedKeyData = jwt.verify(encodedKeyData, SECRET_KEY);
 
-    console.log(decodedKey)
-    const keyId = decodedKey.keyId;
+    console.log(decodedKeyData)
+    const keyId = decodedKeyData.keyId;
+    const keyType = decodedKeyData.type;
 
-    console.log(keyId)
+    console.log(keyId, keyType)
     try {
       await connectToDB();
       // Check if the key exists
@@ -116,7 +120,7 @@ export const GET = async (request) => {
           JSON.stringify({
             error:
               "Key is expired! Please Contact Tido Empire to verify Key status.",
-            errorType: expiredKey,
+            errorType: "expiredKey",
           }),
           { status: 400 }
         );
@@ -127,14 +131,14 @@ export const GET = async (request) => {
       //    retryCountdown = new Date(Date.now() + 10 * 60 * 1000); // Set countdown timer for 10 minutes
       //  }
       //  numberOfTries--;
-      if (!savedKeyData.keyId) {
-        savedKeyData.keyId = decodedKey.keyId;
-        savedKeyData.verified = decodedKey.verified;
+      if (!savedKeyData.keyData) {
+        savedKeyData.keyData = encodedKeyData;
       }
       return new Response(
         JSON.stringify({
           success: true,
           key: keyId,
+          type: keyType,
           message: "Key verified successfully",
         }),
         {
@@ -278,13 +282,15 @@ export const POST = async (request) => {
       //    retryCountdown = new Date(Date.now() + 10 * 60 * 1000); // Set countdown timer for 10 minutes
       //  }
       //  numberOfTries--;
-      const keyToken = jwt.sign({ keyId: keyData._id }, SECRET_KEY, {
+      const keyToken = jwt.sign({ keyId: keyData._id, type: keyData.type }, SECRET_KEY, {
         expiresIn: "3h",
       });
       console.log("token generated");
 
-      savedKeyData.keyId = keyToken;
+      // savedKeyData.keyId = keyData.type;
+      savedKeyData.keyData = keyToken;
       savedKeyData.verified = true;
+      
       console.log("Key successfully saved");
       return new Response(
         JSON.stringify({

@@ -1,5 +1,6 @@
 "use client";
 import Loading from "@/app/loading";
+import ConfirmationMessage from "@/components/Confirmation";
 import { faInfo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button, Input } from "@material-tailwind/react";
@@ -95,7 +96,8 @@ const ValidationPage = () => {
       if (response.ok) {
         const data = await response.json();
         notify("Complete Registration! Thank you.");
-        router.push(`/agent?s=${data.success}&r=${data.ref}`);
+        router.push(`/agent?s=${data.success}&r=${data.ref}&k=${data.key}`);
+       
       } else {
         const data = await response.json();
         if (response.status === 400) {
@@ -105,8 +107,13 @@ const ValidationPage = () => {
             startCountdown();
           }
         } else if (response.status === 403) {
-          if (data.errorType === "keyAbsent" || data.errorTpe === "keyNull2")
+          if (
+            data.errorType === "keyAbsent" ||
+            data.errorType === "keyNull2" ||
+            data.errorType === "unauthorizedCreation"
+          ) {
             router.push(`/access?errorStatus=${data.errorType}`);
+          }
           setError({ errorState: true, type: data.errorType });
           setRemainingTries(0);
         } else if (response.status === 500) {
@@ -156,7 +163,7 @@ const ValidationPage = () => {
     } catch (error) {
       console.error("An error occurred", error);
       warn("Sorry, please contact Tido Empire and try again later.");
-    } 
+    }
   }, [router]); // No dependencies here because fetch is used internally
 
   const handleResend = async () => {
@@ -333,7 +340,8 @@ const ValidationPage = () => {
                 error.errorState ||
                 verificationCode.length !== 6 ||
                 submitting ||
-                remainingTries === 0 || !responseGotten
+                remainingTries === 0 ||
+                !responseGotten
               }
               loading={submitting}
             >
@@ -350,6 +358,17 @@ const ValidationPage = () => {
             </Button>
           </div>
           <ToastContainer />
+          {submitting && (
+            <>
+              <div className="w-full h-full fixed z-[999] flex items-center justify-center bg-black/70 top-0 left-0 gap-4">
+                <div className="size-4 bg-transparent border-4 border-white border-r-0 border-l-0 border-t-0 rounded-xl box-content animate-spin"></div>
+                <ConfirmationMessage
+                  className="w-96"
+                  message={"Validating Email..."}
+                />
+              </div>
+            </>
+          )}
           {remainingTries === 0 && (
             <div className="flex items-center justify-center w-full h-full fixed top-0 left-0 bg-black/90">
               <div>
