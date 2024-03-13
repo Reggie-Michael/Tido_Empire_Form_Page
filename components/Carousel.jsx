@@ -64,7 +64,7 @@ const Carousel = ({ autoSlide = false, autoSlideInterval = 2000 }) => {
         src={slides[currentIndex]}
         width={1000}
         height={700}
-        title={slides[currentIndex]}
+        title={`Slide Image ${currentIndex}`}
         alt={`Slide Image ${currentIndex}`}
         className={`... size-full rounded-2xl object-cover object-center ${
           !appearClass ? " " : "showUp_animate2 "

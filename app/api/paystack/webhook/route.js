@@ -2,6 +2,7 @@ import Agent from "@/models/agent";
 import Customer from "@/models/customer";
 import { connectToDB } from "@/utils/database";
 import crypto from "crypto";
+import mongoose from "mongoose";
 
 const payStackSecretKey = process.env.PAYSTACK_API_SECRET_KEY;
 // Function to retrieve transaction data from Paystack
@@ -49,24 +50,25 @@ const getReferrerData = async (agentId) => {
   try {
     await connectToDB();
     console.log("from referrer data", agentId);
-    
-      return "admin";
+
+    return "admin";
   } catch (error) {
     console.error("Error getting agent id", error);
   }
 };
 
-const saveCustomerData = async (agentId, customerData) => {
+const saveCustomerData = async (agentId, customerData, shopLocation) => {
   try {
     const referrerId = agentId !== "admin" ? agentId : "";
     await connectToDB();
-    if(agentId !=="admin"){
+    if (agentId !== "admin") {
       const newCustomer = new Customer({
         referrer: referrerId,
         firstName: customerData?.customer?.first_name,
         lastName: customerData?.customer?.last_name,
         phoneNumber: customerData?.customer?.phone,
         email: customerData?.customer?.email,
+        shopLocation: shopLocation || null,
         referenceNumber: customerData?.reference,
         purchaseDate: customerData?.paid_at,
       });
@@ -74,12 +76,13 @@ const saveCustomerData = async (agentId, customerData) => {
       const customerId = newCustomer._id;
       console.log("CustomerId", customerId);
       return customerId;
-    }else {
+    } else {
       const newCustomer = new Customer({
         firstName: customerData?.customer?.first_name,
         lastName: customerData?.customer?.last_name,
         phoneNumber: customerData?.customer?.phone,
         email: customerData?.customer?.email,
+        shopLocation: shopLocation || null,
         referenceNumber: customerData?.reference,
         purchaseDate: customerData?.paid_at,
       });
@@ -87,7 +90,6 @@ const saveCustomerData = async (agentId, customerData) => {
       const customerId = newCustomer._id;
       console.log("CustomerId", customerId);
       return customerId;
-
     }
   } catch (error) {
     console.error("Error saving customer data", error);
@@ -166,9 +168,12 @@ export const POST = async (req) => {
       response.headers.set("Allow", "POST");
       return response;
     }
-    const { referenceNo, refId } = await req.json();
+    const { referenceNo, refId, shopLocation: shopLoc } = await req.json();
+    const shopLocation = shopLoc
+      ? shopLoc.toString().replace(/[^a-zA-Z]/g, "")
+      : null;
 
-    console.log(referenceNo, refId);
+    console.log(referenceNo, refId, shopLocation);
 
     // Perform necessary validation on the reference parameter
     if (!referenceNo) {
@@ -189,7 +194,11 @@ export const POST = async (req) => {
     if (response.status === "success") {
       // Respond with a success message
       const referrerId = await getReferrerData(refId);
-      const customerId = await saveCustomerData(referrerId, response);
+      const customerId = await saveCustomerData(
+        referrerId,
+        response,
+        shopLocation
+      );
       console.log(referrerId, customerId);
       await updateAgentData(referrerId, customerId);
       return new Response("Callback received successfully", { status: 200 });

@@ -215,7 +215,7 @@ const KeyGen = () => {
 
   const handleCopy = () => {
     setCopied(generatedKey);
-    navigator.clipboard.writeText(generatedKey);
+    navigator?.clipboard?.writeText(generatedKey);
     setTimeout(() => setCopied(false), 3000);
   };
 

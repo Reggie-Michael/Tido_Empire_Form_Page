@@ -287,7 +287,7 @@ export default function KeySubmission() {
                 className={`size-5 mr-2 ${
                   !key
                     ? "opacity-30 cursor-not-allowed"
-                    : "opacity-100 cursor-pointer"
+                    : "opacity-90 cursor-pointer"
                 }`}
                 aria-disabled={!key}
               />

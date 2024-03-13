@@ -1,6 +1,7 @@
 "use client";
 import { faBars, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Button } from "@material-tailwind/react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,7 +9,7 @@ import { useState } from "react";
 // import React from "react";
 import { v4 as uuidv4 } from "uuid";
 
-const Navbar = ({ activeSection, className, actionLink }) => {
+const Navbar = ({ activeSection, className, actionLink, modalOpen }) => {
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
   const isActive = (path) => pathname === path;
@@ -63,12 +64,14 @@ const Navbar = ({ activeSection, className, actionLink }) => {
           ))}
           <li>
             {actionLink || (
-              <Link
-                href="https://paystack.com/pay/AMAC_Application_Form"
-                className="w-[65px] h-[30px] md:w-[90px] md:h-[40px] text-xs lg:text-base flex items-center justify-center bg-blue-700 rounded-md hover:border-2 hover:border-blue-700 hover:bg-transparent hover:opacity-80 "
+              <Button
+                onClick={modalOpen}
+                title="Fill Shop Application Form"
+                aria-label="Fill Shop Application Form"
+                className="w-[65px] h-[30px] md:w-[90px] md:h-[40px] text-xs font-semibold capitalize lg:text-base flex items-center justify-center bg-blue-700 rounded-md hover:border-2 hover:border-blue-700 hover:bg-transparent hover:opacity-80 "
               >
                 Get Form
-              </Link>
+              </Button>
             )}
           </li>
         </ul>
@@ -100,12 +103,14 @@ const Navbar = ({ activeSection, className, actionLink }) => {
               ))}
               <li className="px-[2%]">
                 {actionLink || (
-                  <Link
-                    href="https://paystack.com/pay/AMAC_Application_Form"
-                    className=" w-full h-[40px] flex items-center justify-center text-sm font-medium bg-blue-700 rounded-md text-white hover:border-2 hover:border-blue-700 hover:bg-transparent hover:opacity-80 "
+                  <Button
+                    onClick={modalOpen}
+                    title="Fill Shop Application Form"
+                    aria-label="Fill Shop Application Form"
+                    className=" w-full h-[40px] flex items-center justify-center text-sm font-medium bg-blue-700 rounded-md text-white capitalize hover:border-2 hover:border-blue-700 hover:bg-transparent hover:opacity-80 "
                   >
                     Get Form
-                  </Link>
+                  </Button>
                 )}
               </li>
             </ul>

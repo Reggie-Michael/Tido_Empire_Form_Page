@@ -17,11 +17,14 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Loading from "./loading";
 import Footer from "@/components/Footer";
+import ShopLocation from "@/components/ShopLocation";
+import { Button } from "@material-tailwind/react";
 
 export default function Home() {
   // const [projectButtonHovered, setProjectButtonHovered] = useState(false);
   const [projectButtonText, setProjectButtonText] = useState("Read More");
   const [letterVisible, setLetterVisible] = useState(false);
+  const [formPurchase, setFormPurchase] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const homeRef = useRef(null);
@@ -74,8 +77,25 @@ export default function Home() {
   const handlePaymentProcess = useCallback(async () => {
     try {
       console.log("Ready to handle payment");
+      const shopLocArray = [
+        "warehouse",
+        "first floor",
+        "second floor",
+        "ground floor",
+      ];
       const refId = sessionStorage.getItem("referrerId") || "admin";
+      const shopLocFunction = () => {
+        const value =
+          sessionStorage.getItem("shopLocation") ||
+          shopLocArray[Math.floor(Math.random() * shopLocArray.length)];
+        const newValue = value
+          ? value.toString().replace(/[^a-zA-Z]/g, "")
+          : "";
+        return newValue;
+      };
+      const shopLocation = shopLocFunction();
       console.log("refId is:", refId);
+      console.log("shopLocation is:", shopLocation);
       console.log("handling Payment...");
       // const response = await fetch(
       //   `/api/paystack/webhook?reference=${referenceNo}&refererId=${refId}`,
@@ -90,6 +110,7 @@ export default function Home() {
         body: JSON.stringify({
           referenceNo,
           refId,
+          shopLocation,
         }),
       });
 
@@ -144,6 +165,8 @@ export default function Home() {
 
   const displayLetter = () => setLetterVisible(true);
   const hideLetter = () => setLetterVisible(false);
+  const showModal = () => setFormPurchase(true);
+  const hideModal = () => setFormPurchase(false);
   const currentYear = new Date().getFullYear();
 
   // Function to scroll back to the top smoothly
@@ -157,7 +180,7 @@ export default function Home() {
   // Effect to manage overflow based on modal state
   useEffect(() => {
     // Add or remove 'overflow-hidden' class based on the modal state
-    if (letterVisible) {
+    if (letterVisible || formPurchase) {
       document.body.classList.add("overflow-hidden");
     } else {
       document.body.classList.remove("overflow-hidden");
@@ -316,7 +339,7 @@ export default function Home() {
             }}
           >
             <div className="overlay bg-[#00000083] w-full h-full flex flex-col gap-4 md:gap-10">
-              <Navbar activeSection={activeSection} />
+              <Navbar activeSection={activeSection} modalOpen={showModal} />
               <div className="flex-1 flex flex-col text-white items-center justify-center gap-4 md:gap-8 lg:gap-14">
                 {/* <h4 className="uppercase text-xl mb-1 font-medium text-white text-opacity-95">
               Application Form
@@ -342,9 +365,11 @@ export default function Home() {
               market; it's about creating a sustainable future for generations
               to come.
             </p> */}
-                <Link
-                  href="https://paystack.com/pay/AMAC_Application_Form"
-                  className="w-[130px] h-[45px] shadow-[0_2px_2px_2px_] text-base hover:text-lg active:text-lg md:text-xl md:hover:text-2xl shadow-[#a9a9a91f] sm:shadow-none lg:w-[19%] lg:h-[70px] relative box-border flex group opacity-80  items-center justify-center gap-1 md:gap-3  bg-blue-700 rounded-md text-white  hover:border-blue-700  hover:opacity-100 send-btn"
+                <Button
+                  onClick={showModal}
+                  title="Fill Shop Application Form"
+                  aria-label="Fill Shop Application Form"
+                  className="w-[130px] h-[45px] shadow-[0_2px_2px_2px_] text-base hover:text-lg active:text-lg md:text-xl md:hover:text-2xl shadow-[#a9a9a91f] sm:shadow-none lg:w-[19%] lg:h-[70px] relative box-border flex group opacity-80  items-center justify-center gap-1 md:gap-3  bg-blue-700 rounded-md text-white capitalize font-semibold  hover:border-blue-700  hover:opacity-100 send-btn"
                 >
                   Get Form{" "}
                   {/* <span className="animate-bounce text-3xl -mb-1 -rotate-[135deg]">
@@ -357,7 +382,7 @@ export default function Home() {
                     className="text-base md:text-2xl -rotate-[45deg] group-hover:inline group-active:inline md:hidden"
                   />
                   <span className="send-span"></span>
-                </Link>
+                </Button>
               </div>
             </div>
           </div>
@@ -492,6 +517,7 @@ export default function Home() {
                       <div
                         className="fixed flex items-center justify-center top-1 right-9 md:top-4 md:right-7 text-3xl md:text-5xl cursor-pointer hover:opacity-80"
                         title="close"
+                        aria-label="close letter"
                       >
                         <FontAwesomeIcon
                           alt="x icon"
@@ -628,12 +654,16 @@ export default function Home() {
           <div className="my-52 w-full text-base flex flex-col items-center text-center font-semibold md:text-lg text-white bg-blue-600 py-4 rounded-md">
             <p>Want to become our Sales Agent? Contact Us Now</p>
 
-            <a href="mailto:" className="hover:underline mt-3">
-              Tido@empire.agent
+            <a
+              href="mailto:info@everviewproperties.ng"
+              className="hover:underline mt-3"
+            >
+              info@everviewproperties.ng
             </a>
           </div>
 
-          <Footer />
+          {formPurchase && <ShopLocation hideModal={hideModal} />}
+          <Footer modalOpen={showModal} />
           {paymentProcessing && (
             <>
               <div className="w-full h-dvh fixed z-[999] flex items-center justify-center bg-black/70 top-0 left-0 gap-4">

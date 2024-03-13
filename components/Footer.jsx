@@ -5,9 +5,10 @@ import {
 } from "@fortawesome/free-brands-svg-icons";
 import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Button } from "@material-tailwind/react";
 import Link from "next/link";
 
-const Footer = () => {
+const Footer = ({ modalOpen }) => {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -21,9 +22,11 @@ const Footer = () => {
             Get a spot in our market by buying an application form Now!
           </p>
         </div>
-        <Link
-          href="https://paystack.com/pay/AMAC_Application_Form"
-          className="w-[25%] md:w-2/5 h-[40px] md:h-[50px] shadow-[0_2px_2px_2px_] text-sm md:text-base hover:text-lg active:text-lg shadow-[#a9a9a91f] sm:shadow-none relative box-border flex group opacity-90  items-center justify-center gap-1 md:gap-3  bg-blue-700 rounded-md text-white  hover:border-blue-700 hover:opacity-100 send-btn"
+        <Button
+          onClick={modalOpen}
+          title="Fill Shop Application Form"
+          aria-label="Fill Shop Application Form"
+          className="w-[25%] md:w-2/5 h-[40px] md:h-[50px] shadow-[0_2px_2px_2px_] text-sm md:text-base hover:text-lg active:text-lg capitalize font-medium shadow-[#a9a9a91f] sm:shadow-none relative box-border flex group opacity-90  items-center justify-center gap-1 md:gap-3  bg-blue-700 rounded-md text-white  hover:border-blue-700 hover:opacity-100 send-btn"
         >
           Get Form
           <FontAwesomeIcon
@@ -31,7 +34,7 @@ const Footer = () => {
             className="text-sm md:text-lg -rotate-[45deg] group-hover:inline group-active:inline md:hidden"
           />
           <span className="send-span"></span>
-        </Link>
+        </Button>
       </div>
       <div className="flex flex-col gap-5 md:col-span-3">
         <h2 className="text-xl md:text-3xl font-semibold font-inter uppercase">

@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { connectToDB } from "@/utils/database";
 import SalesAgentKey from "@/models/agentKey";
+import mongoose from "mongoose";
 
 const SECRET_KEY = process.env.SITE_SECRET; // Replace with your actual secret key
 let numberOfTries = 3;
@@ -216,5 +217,5 @@ export const DELETE = async (request, { params }) => {
         }
       );
     }
-  }
+  } 
 };

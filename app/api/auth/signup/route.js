@@ -7,7 +7,10 @@ import nodemailer from "nodemailer";
 import crypto from "crypto";
 import SalesAgentKey from "@/models/agentKey";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
+import sgMail from "@sendgrid/mail";
 const SECRET_KEY = process.env.SITE_SECRET; // Replace with your actual secret key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 const formData = {
   fName: "",
@@ -268,12 +271,15 @@ const saveImage = async (imageFile, imageName) => {
 };
 // Create a Nodemailer transporter
 const transporter = nodemailer.createTransport({
-  service: "Gmail", // Use your email service provider here
+  host: process.env.EMAIL_SERVER_HOST, // Use Hostinger's SMTP host
+  port: process.env.EMAIL_SERVER_PORT,
+  secure: true, // Set to true if using SSL
   auth: {
     user: process.env.EMAIL_SERVER_USER,
     pass: process.env.EMAIL_SERVER_PASSWORD,
   },
 });
+
 
 // Function to generate a random verification code
 // const generateVerificationCode = () => {
@@ -288,18 +294,29 @@ const generateVerificationCode = () => {
 // Function to send verification code to email
 const sendVerificationCode = async (email) => {
   const { verificationCode, expirationTime } = generateVerificationCode();
-
+console.log(verificationCode, expirationTime)
   const mailOptions = {
     from: process.env.EMAIL_SERVER_USER,
     to: email,
     subject: "Tido Sales Agent Verification Code",
     text: ` Your verification code is: ${verificationCode} \n You just requested to create a sales agent account from Tido Empire with this email. \n Ignore this email if you did not.`,
   };
-
+  // const msg = {
+  //   to: email, // Change to your recipient
+  //   from: 'michael', // Change to your verified sender
+  //   subject: 'Sending with SendGrid is Fun',
+  //   text: 'and easy to do anywhere, even with Node.js',
+  //   html: '<strong>and easy to do anywhere, even with Node.js</strong>',
+  // }
+  
+   
   try {
     // Send the email
     await transporter.sendMail(mailOptions);
+    // await sgMail.send(msg)
     console.log("Verification code sent successfully.");
+    console.log('Email sent')
+
     return { verificationCode, expirationTime }; // Return the verification code so it can be verified later
   } catch (error) {
     console.error("Error sending verification code:", error);

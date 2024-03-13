@@ -1,6 +1,7 @@
 import SalesAgentKey from "@/models/agentKey";
 import { connectToDB } from "@/utils/database";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 const savedKeyData = {
   keyData: "",
@@ -58,7 +59,9 @@ export const GET = async (request) => {
     //         { status: 403 }
     //       );
         const authHeader = request.headers.get("Authorization");
-        if (!authHeader) {
+        console.log(typeof authHeader)
+
+        if (!authHeader || typeof authHeader !== "string") {
           return new Response(
             JSON.stringify({
               error: "Authorization header missing",
@@ -69,12 +72,14 @@ export const GET = async (request) => {
             }
           );
         }
+  
         // Extract the token from the Authorization header
         const passKey = authHeader.split(" ")[1];
     //     console.log("passKey", passKey);
     const encodedKeyData = savedKeyData.keyData || passKey;
     console.log(!encodedKeyData, encodedKeyData);
-    if (!encodedKeyData || encodedKeyData == null || encodedKeyData === undefined) {
+    
+    if (!encodedKeyData || encodedKeyData == "null") {
       console.log("returning unauthorized");
       return new Response(
         JSON.stringify({
@@ -314,5 +319,5 @@ export const POST = async (request) => {
     return new Response(JSON.stringify({ message: "Internal Server Error" }), {
       status: 500,
     });
-  }
+  } 
 };

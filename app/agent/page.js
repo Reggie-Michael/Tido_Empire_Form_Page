@@ -57,12 +57,12 @@ export default function Agent() {
 
   const handleCopy = () => {
     setCopied(referralLink);
-    navigator.clipboard.writeText(referralLink);
+    navigator?.clipboard?.writeText(referralLink);
     setTimeout(() => setCopied(false), 3000);
   };
   const handleCopy2 = () => {
     setCopied(agencyKey);
-    navigator.clipboard.writeText(agencyKey);
+    navigator?.clipboard?.writeText(agencyKey);
     setTimeout(() => setCopied(false), 3000);
   };
 

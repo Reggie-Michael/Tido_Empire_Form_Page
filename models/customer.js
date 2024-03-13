@@ -26,6 +26,9 @@ const CustomerSchema = new Schema({
     type: String,
     required: [true, "Email is required!"],
   },
+  shopLocation: {
+    type: String,
+  },
   referenceNumber: {
     type: String,
     required: [true, "Purchase Reference Number is required"],
