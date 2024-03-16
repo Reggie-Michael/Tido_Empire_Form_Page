@@ -8,7 +8,7 @@ const ShopLocation = ({ hideModal }) => {
     try {
       sessionStorage.setItem("shopLocation", value);
       if (typeof window !== "undefined") {
-        window.location.href = "https://paystack.com/pay/AMAC_Application_Form";
+        window.location.href = "https://paystack.com/pay/tidobuilds_amac_application_form";
       } else {
         // Handle redirection for cases where window is not available (server-side rendering)
         // For example, you can log an error or redirect to a different URL
