@@ -225,7 +225,7 @@ const validateImage = (image) => {
 // Function to save the image
 const saveImage = async (imageFile, imageName) => {
   const folderId = process.env.GOOGLE_DRIVE_AGENT_FOLDER;
-  const uploadFolder = "./data/uploads"; // Update this with your actual path
+  const uploadFolder =  "./app/data/upload"; // Update this with your actual path
 
   // Get the file extension from the image file name
   const fileExtension = imageFile.name.split(".").pop();

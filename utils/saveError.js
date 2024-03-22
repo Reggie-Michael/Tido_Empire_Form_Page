@@ -88,7 +88,7 @@ export const writeToLogFile = async ({ errorData }) => {
 
   try {
     const fileName = `Tido ${webStatus} Log Message ${timestamp}_${uuidv4()}.txt`;
-    const uploadFolder = "./data/logs";
+    const uploadFolder = "./app/data/logs";
     const logFilePath = join(uploadFolder, fileName);
 
     // Check if the file already exists
