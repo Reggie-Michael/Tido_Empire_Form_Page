@@ -2,22 +2,18 @@ import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button } from "@material-tailwind/react";
 import React from "react";
+import Link from "next/link";
 
 const ShopLocation = ({ hideModal }) => {
   const buttonClick = (value) => {
     try {
       sessionStorage.setItem("shopLocation", value);
       if (typeof window !== "undefined") {
-        window.location.href = "https://paystack.com/pay/tidobuilds_amac_application_form";
-      } else {
-        // Handle redirection for cases where window is not available (server-side rendering)
-        // For example, you can log an error or redirect to a different URL
-        console.error("Unable to redirect: window is not available.");
-        // Redirect to a different URL or perform a different action as needed
+        window.location.href =
+          "https://paystack.com/pay/tidobuilds_amac_application_form_test_1711027344564";
       }
       setTimeout(hideModal, 2000);
     } catch (error) {
-      console.log("error redirecting");
       hideModal();
     }
   };
@@ -35,6 +31,19 @@ const ShopLocation = ({ hideModal }) => {
           onClick={hideModal}
           className="hover:drop-shadow-[3px_7px_3px_#00000075] text-blue-600/60 active:translate-x-0.5 active:translate-y-1 active:drop-shadow-[1px_4px_1.5px_#000000]"
         />
+      </div>
+      <div className=" text-white absolute top-10 font-medium  text-sm md:text-lg px-2">
+        Proceeding onward means you have accepted to&nbsp;
+        <Link
+          href={"/terms"}
+          title="Terms and Conditions"
+          onClick={() => setTimeout(hideModal, 500)}
+          aria-label="Tido Empire Terms and Condition"
+          className="underline mb-3 underline-offset-2  hover:opacity-75 lowercase"
+        >
+          our Terms and Conditions
+        </Link>
+        {/* Hover on buttons for more details */}
       </div>
       <div className="flex flex-col w-full h-4/6 md:h-2/5 gap-20 md:gap-0 px-[5%] md:px-[10%] items-center justify-between">
         <div className="text-white">
@@ -74,8 +83,17 @@ const ShopLocation = ({ hideModal }) => {
             Warehouse
           </Button>
         </div>
-        <div className="opacity-25 text-white absolute bottom-0">
-          Hover on buttons for more details
+        <div className=" text-white absolute bottom-0">
+          <Link
+            href={"/terms"}
+            title="Terms and Conditions"
+            onClick={() => setTimeout(hideModal, 500)}
+            aria-label="Tido Empire Terms and Condition"
+            className="underline mb-3 underline-offset-2 font-medium text-sm md:text-lg hover:opacity-75"
+          >
+            Read Our Terms and Conditions
+          </Link>
+          {/* Hover on buttons for more details */}
         </div>
       </div>
     </div>

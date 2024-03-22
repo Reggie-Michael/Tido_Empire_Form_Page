@@ -125,7 +125,6 @@ export default function Login() {
 
       if (response.ok) {
         if (data.success) {
-          console.log("Token is valid");
           setPassToken((prevToken) => ({
             ...prevToken,
             keyId: data.key,
@@ -134,11 +133,9 @@ export default function Login() {
         }
       } else {
         // Handle other HTTP errors
-        console.log(data);
         handleError(response.status, data);
       }
     } catch (error) {
-      console.error("An error occurred", error);
     } finally {
       setResponseGotten(true);
     }
@@ -219,7 +216,6 @@ export default function Login() {
       if (error.inputNull.state) {
         const inputNull = error.inputNull.type;
         const nameValue = agency === "company" ? "Company" : "First";
-        console.log("nameValue", nameValue);
         if (inputNull === "fNameNull")
           errors.push(
             `${nameValue} Name cannot be null! Please Input ${nameValue} name.`
@@ -313,8 +309,7 @@ export default function Login() {
   };
 
   const setErrorStatus = (val) => {
-    console.log("From setErrorStatus: ", typeof val);
-    console.log("From setErrorStatus: ", val);
+    
     if (typeof val == "string") {
       setError((prev) => ({
         ...prev, // Spread the previous state
@@ -325,7 +320,6 @@ export default function Login() {
       }));
     } else if (typeof val === "object" && val !== null) {
       const errorType = val?.error;
-      console.log("From setErrorStatus: ErrorType", errorType);
 
       setError((prev) => ({
         ...prev, // Spread the previous state
@@ -355,7 +349,6 @@ export default function Login() {
   const handleFileChange = (e) => {
     const validateImage = (image) => {
       if (image) {
-        console.log(image);
         const allowedImageTypes = ["jpg", "jpeg", "png"];
 
         const isAllowedImageType = (file) => {
@@ -383,14 +376,7 @@ export default function Login() {
         // Check file size (max 5MB)
         const maxSize = 5 * 1024 * 1024; // 5MB
         if (image.size > maxSize) {
-          console.log(image.size);
-          // setError((prev) => ({
-          //   ...prev,
-          //   minMaxInvalid: {
-          //     state: true,
-          //     type: "",
-          //   },
-          // }));
+        
           const message = { error: "minMaxInvalid", type: "imageTooLarge" };
           return message;
         }
@@ -448,7 +434,6 @@ export default function Login() {
       setErrorStatus(validationMessage);
       return;
     }
-    console.log("setting image");
     // If all validation checks pass, set the selected file and display image preview
     const reader = new FileReader();
     reader.onload = () => {
@@ -522,12 +507,8 @@ export default function Login() {
       const numberRegex = /^[0-9\+\-\ ]+$/;
       const cacNoRegex = /^[0-9 ]+$/;
 
-      console.log(phoneNumber);
-      console.log("pNumber ready for val", readyForVerification.pNumber);
-      console.log(cacNoPresent);
       let message = null;
 
-      console.log("phone number", !phoneNumber);
       if (!phoneNumber) {
         message = { error: "inputNull", type: "pNumberNull" };
       } else if (!isValidExpression(phoneNumber, numberRegex)) {
@@ -547,7 +528,6 @@ export default function Login() {
         message = { error: "minMaxInvalid", type: "cacNoVoidCharLength" };
       }
 
-      console.log("from number val", message);
       return message ? message : "passNumbersCheck";
     };
 
@@ -565,7 +545,6 @@ export default function Login() {
 
     const validateImage = (image) => {
       if (image) {
-        console.log(image);
         const allowedImageTypes = ["jpg", "jpeg", "png"];
 
         const isAllowedImageType = (file) => {
@@ -593,7 +572,6 @@ export default function Login() {
         // Check file size (max 5MB)
         const maxSize = 5 * 1024 * 1024; // 5MB
         if (image.size > maxSize) {
-          console.log(image.size);
           // setError((prev) => ({
           //   ...prev,
           //   minMaxInvalid: {
@@ -623,7 +601,6 @@ export default function Login() {
       return "passImageCheck";
     };
     let allInputsValid = true;
-    console.log("From validationCallback: Starting Validation");
 
     // Check if agency is missing or invalid
     if (!agency || (agency !== "individual" && agency !== "company")) {
@@ -637,17 +614,12 @@ export default function Login() {
 
     // Validate based on agency type
 
-    console.log("From validationCallback: Starting Name Validation");
 
     if (readyForVerification.companyName || readyForVerification.fName) {
-      console.log(
-        "From validationCallback: First Name is ready for validation"
-      );
-
+     
       const checkVal =
         agency === "company" ? inputValues.companyName : inputValues.fName;
       const validateMessage = validateMainName(checkVal);
-      console.log("Form validation callback: ", validateMessage);
       if (validateMessage !== "passFNameCheck") {
         setErrorStatus(validateMessage);
         allInputsValid = false;
@@ -655,12 +627,9 @@ export default function Login() {
     }
 
     if (agency !== "company" && readyForVerification.lName) {
-      console.log(
-        "From validationCallback:  Last Name is ready for validation"
-      );
+    
 
       const validateMessage = validateOtherName(inputValues.lName);
-      console.log("Form validation callback: ", validateMessage);
       if (validateMessage !== "passLNameCheck") {
         setErrorStatus(validateMessage);
         allInputsValid = false;
@@ -678,11 +647,8 @@ export default function Login() {
 
     // Validate phone number and CAC number
     if (agency === "company") {
-      console.log("From validationCallback: Agency is Company");
       if (readyForVerification.pNumber && readyForVerification.cacNo) {
-        console.log(
-          "From validationCallback: Company Number and Cac is ready for validation"
-        );
+    
         const numbersValidationMessage = validateNumbers(
           inputValues.pNumber,
           inputValues.cacNo,
@@ -694,19 +660,15 @@ export default function Login() {
         }
       }
     } else {
-      console.log("From validationCallback: Agency is not Company");
 
       if (readyForVerification.pNumber) {
-        console.log(
-          "From validationCallback: Phone Number is ready for validation"
-        );
+       
 
         const numbersValidationMessage = validateNumbers(
           inputValues.pNumber,
           inputValues.cacNo,
           agency === "company"
         );
-        console.log("numbersValidationMessage", numbersValidationMessage);
         if (numbersValidationMessage !== "passNumbersCheck") {
           setErrorStatus(numbersValidationMessage);
           allInputsValid = false;
@@ -758,9 +720,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    console.log("clicked", inputValues);
     try {
-      console.log(validateInputs());
       if (!validateInputs()) {
         const errorMessage = errorMessage();
         warn(errorMessage[0]);
@@ -788,12 +748,10 @@ export default function Login() {
 
         const data = response.status !== 500 && (await response.json());
 
-        console.log(response);
-        console.log(data);
+    
         // Handle the response from the backend
         if (response.ok) {
-          // const data = await response.json();
-          // console.log(data);
+        
           if (data.success && data.status == "verified") {
             notify(
               "Sales Agent Account already Created. Redirecting to Sales Tab"
@@ -807,7 +765,7 @@ export default function Login() {
               "You will be redirected to where you will input verification soon"
             );
             setTimeout(() => {
-              router.push("/agent/login/verify-email");
+              router.push("/agent/login/verify");
             }, 1000);
           }
 
@@ -837,16 +795,13 @@ export default function Login() {
           }
           // Handle errors
           const errorData = data.error;
-          console.log(errorData);
           warn(errorData);
         }
       } catch (error) {
         // Handle network errors
-        console.error("An error occurred", error);
-        warn("Sorry, please contact Tido Empire and try again later.");
+        warn("An error occurred, Please contact Tido Empire and try again later.");
       }
     } catch (error) {
-      console.error("An error occurred", error);
       warn("Sorry, please contact Tido Empire and try again later.");
     } finally {
       setSubmitting(false);
@@ -855,7 +810,6 @@ export default function Login() {
 
   useEffect(() => {
     // Simulate fetching data
-    console.log("mounted");
     responseGotten && setIsLoading(false);
   }, [responseGotten]);
 
@@ -874,10 +828,8 @@ export default function Login() {
     }
     const fetchData = async () => {
       try {
-        console.log("Fetching data");
         await verifyAccess();
       } catch (error) {
-        console.error("Error fetching data", error);
         // Handle error here (e.g., display error message)
 
         warn("An unexpected error occurred! Refreshing...");
@@ -944,7 +896,6 @@ export default function Login() {
     });
     setImagePreview(null);
 
-    console.log(agency, inputValues);
   };
 
   useEffect(() => {
@@ -1233,7 +1184,6 @@ export default function Login() {
                     key={`ValidationError_${index}`}
                     className="flex gap-2 items-center justify-center text-red-700 font-medium text-xl"
                   >
-                    {console.log(message)}
                     <div className="size-2 p-4 rounded-full bg-gray-500/30 flex items-center justify-center">
                       <FontAwesomeIcon icon={faInfo} />
                     </div>

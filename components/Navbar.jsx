@@ -9,7 +9,13 @@ import { useState } from "react";
 // import React from "react";
 import { v4 as uuidv4 } from "uuid";
 
-const Navbar = ({ activeSection, className, actionLink, modalOpen }) => {
+const Navbar = ({
+  activeSection,
+  className,
+  actionLink,
+  modalOpen,
+  formLinkDisabled = false,
+}) => {
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
   const isActive = (path) => pathname === path;
@@ -62,18 +68,20 @@ const Navbar = ({ activeSection, className, actionLink, modalOpen }) => {
           {navigationItems.map((item) => (
             <NavLink key={`${item.path} ${uuidv4()}`} {...item} />
           ))}
-          <li>
-            {actionLink || (
-              <Button
-                onClick={modalOpen}
-                title="Fill Shop Application Form"
-                aria-label="Fill Shop Application Form"
-                className="w-[65px] h-[30px] md:w-[90px] md:h-[40px] text-xs font-semibold capitalize lg:text-base flex items-center justify-center bg-blue-700 rounded-md hover:border-2 hover:border-blue-700 hover:bg-transparent hover:opacity-80 "
-              >
-                Get Form
-              </Button>
-            )}
-          </li>
+          {formLinkDisabled === false && (
+            <li className={`${formLinkDisabled && "hidden"}`}>
+              {actionLink || (
+                <Button
+                  onClick={modalOpen}
+                  title="Fill Shop Application Form"
+                  aria-label="Fill Shop Application Form"
+                  className="w-[65px] h-[30px] md:w-[90px] md:h-[40px] text-xs font-semibold capitalize lg:text-base flex items-center justify-center bg-blue-700 rounded-md hover:border-2 hover:border-blue-700 hover:bg-transparent hover:opacity-80 "
+                >
+                  Get Form
+                </Button>
+              )}
+            </li>
+          )}
         </ul>
         {/* Mobile Nav  */}
         <FontAwesomeIcon
@@ -101,18 +109,20 @@ const Navbar = ({ activeSection, className, actionLink, modalOpen }) => {
                   />
                 </div>
               ))}
-              <li className="px-[2%]">
-                {actionLink || (
-                  <Button
-                    onClick={modalOpen}
-                    title="Fill Shop Application Form"
-                    aria-label="Fill Shop Application Form"
-                    className=" w-full h-[40px] flex items-center justify-center text-sm font-medium bg-blue-700 rounded-md text-white capitalize hover:border-2 hover:border-blue-700 hover:bg-transparent hover:opacity-80 "
-                  >
-                    Get Form
-                  </Button>
-                )}
-              </li>
+              {formLinkDisabled === false && (
+                <li className={`${formLinkDisabled && "hidden"} px-[2%]`}>
+                  {actionLink || (
+                    <Button
+                      onClick={modalOpen}
+                      title="Fill Shop Application Form"
+                      aria-label="Fill Shop Application Form"
+                      className=" w-full h-[40px] flex items-center justify-center text-sm font-medium bg-blue-700 rounded-md text-white capitalize hover:border-2 hover:border-blue-700 hover:bg-transparent hover:opacity-80 "
+                    >
+                      Get Form
+                    </Button>
+                  )}
+                </li>
+              )}
             </ul>
           </div>
         )}

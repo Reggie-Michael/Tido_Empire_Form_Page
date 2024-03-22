@@ -96,9 +96,7 @@ export default function KeySubmission() {
       return;
     }
     setSubmitting(true);
-    console.log("clicked", key);
     try {
-      console.log(validateKey());
       if (!validateKey()) return;
       const response = await fetch("/api/auth/admin_key", {
         method: "POST",
@@ -106,15 +104,12 @@ export default function KeySubmission() {
         body: JSON.stringify({ key }),
       });
 
-      console.log(response);
-
       // setKey("")
       const data = response.status !== 500 && (await response.json());
-      console.log(data);
 
       if (response.ok) {
         // Key is valid, redirect to login page with token
-        
+
         if (data.checkStatus === "verified") {
           notify("Key is Valid. You will be redirected soon.");
           setTimeout(() => router.push(`/admin/generate`), 1000);
@@ -136,12 +131,30 @@ export default function KeySubmission() {
           warn("Method Not allowed");
         } else {
           warn("An Error Occurred, Please Try again Later.");
+          try {
+            const errorData = {
+              errorMessage: response.status + " " + response.statusText,
+              referrerUrl: window.location,
+              error: data?.error, // Add your error message here
+            };
+            await writeToLogFile({ errorData });
+          } catch (err) {
+            console.error("Error writing to log file:", err);
+          }
         }
-        console.error(data.error);
       }
     } catch (error) {
       warn("An Error Occurred, Please Try again Later.");
-      console.error("An error occurred", error);
+      try {
+        const errorData = {
+          errorMessage: response.status + " " + response.statusText,
+          referrerUrl: window.location,
+          error: error , // Add your error message here
+        };
+        await writeToLogFile({ errorData });
+      } catch (err) {
+        console.error("Error writing to log file:", err);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -151,7 +164,6 @@ export default function KeySubmission() {
     const value = e.target.value;
     setKey(value);
     if (key.length < 2) setReadyForVerification(true);
-    console.log(readyForVerification);
   };
 
   const validateKey = useCallback(() => {
@@ -248,7 +260,7 @@ export default function KeySubmission() {
         <Loading />
       ) : (
         <div className="flex flex-col h-dvh w-full items-center  gap-5">
-          <Navbar className="text-black" />
+          <Navbar className="text-black" formLinkDisabled={true} />
           <div className="flex flex-col items-center text-center gap-3 mt-20 md:mt-30 lg:mt-40">
             <h4 className="text-xl md:text-2xl leading-3 font-medium">
               Welcome To{" "}

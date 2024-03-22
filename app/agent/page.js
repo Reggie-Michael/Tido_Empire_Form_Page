@@ -22,7 +22,6 @@ export default function Agent() {
   const success = searchParams.get("s");
   const newAgencyKey = searchParams.get("k");
   const refLink = searchParams.get("r");
-  // console.log(mode);
 
   useEffect(() => {
     try {
@@ -34,26 +33,17 @@ export default function Agent() {
         router.push("/agent/login");
       } else {
         const currentURL = window.location.origin;
-        // console.log(currentURL);
         setReferralLink(`${currentURL}/?r=${refLink}`);
         setAgencyKey(`${newAgencyKey}`);
       }
     } catch (error) {
-      console.error(error);
       router.push("/");
     } finally {
       setIsLoading(false);
     }
   }, [refLink, success, newAgencyKey, router]);
 
-  // useEffect(() => {
-  //   // Simulate fetching data
-  //   console.log("mounted");
-  //   setTimeout(() => {
-  //     // Once data is loaded, update loading state
-  //     setIsLoading(false);
-  //   }, 500); // Simulated delay of .5 seconds
-  // }, []);
+  
 
   const handleCopy = () => {
     setCopied(referralLink);

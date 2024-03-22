@@ -1,10 +1,12 @@
 import Agent from "@/models/agent";
 import Customer from "@/models/customer";
 import { connectToDB } from "@/utils/database";
+import { writeToLogFile } from "@/utils/saveError";
 import crypto from "crypto";
 import mongoose from "mongoose";
 
 const payStackSecretKey = process.env.PAYSTACK_API_SECRET_KEY;
+
 // Function to retrieve transaction data from Paystack
 const getTransactionData = async (referenceNo) => {
   try {
@@ -19,18 +21,25 @@ const getTransactionData = async (referenceNo) => {
       }
     );
 
-    //     console.log(response);
     // Check if the request was successful
     if (response.ok) {
       // Parse the response JSON
       const data = await response.json();
       // Return the transaction data
-      console.log("returning data ");
-      return data.data;
+      return data?.data;
     } else {
       // Handle error response
-      console.error("Error retrieving transaction data:", response.status);
-      console.log(response);
+  
+      try {
+        const errorData = {
+          errorMessage: response.status + " " + response.statusText,
+          backendServerUrl: "Paystack Api route",
+          // error: response , // Add your error message here
+        };
+        await writeToLogFile({ errorData });
+      } catch (err) {
+        console.error("Error writing to log file:", err);
+      }
       if (response.status == 400) {
         return 400;
       } else {
@@ -38,10 +47,18 @@ const getTransactionData = async (referenceNo) => {
       }
     }
   } catch (error) {
-    console.error(
-      "An error occurred while retrieving transaction data:",
-      error
-    );
+   
+    try {
+      const errorData = {
+        errorMessage: "An error occurred while retrieving transaction data:",
+        backendServerUrl: "Paystack Api route",
+        error: error, // Add your error message here
+        // requestData: request, // Include the request data here
+      };
+      await writeToLogFile({ errorData });
+    } catch (err) {
+      console.error("Error writing to log file:", err);
+    }
     return null;
   }
 };
@@ -49,11 +66,19 @@ const getTransactionData = async (referenceNo) => {
 const getReferrerData = async (agentId) => {
   try {
     await connectToDB();
-    console.log("from referrer data", agentId);
 
     return "admin";
   } catch (error) {
-    console.error("Error getting agent id", error);
+    try {
+      const errorData = {
+        errorMessage: "Error getting agent id",
+        backendServerUrl: "Paystack Api route",
+        error: error, // Add your error message here
+      };
+      await writeToLogFile({ errorData });
+    } catch (err) {
+      console.error("Error writing to log file:", err);
+    }
   }
 };
 
@@ -74,7 +99,6 @@ const saveCustomerData = async (agentId, customerData, shopLocation) => {
       });
       await newCustomer.save();
       const customerId = newCustomer._id;
-      console.log("CustomerId", customerId);
       return customerId;
     } else {
       const newCustomer = new Customer({
@@ -88,17 +112,24 @@ const saveCustomerData = async (agentId, customerData, shopLocation) => {
       });
       await newCustomer.save();
       const customerId = newCustomer._id;
-      console.log("CustomerId", customerId);
       return customerId;
     }
   } catch (error) {
-    console.error("Error saving customer data", error);
+    try {
+      const errorData = {
+        errorMessage: "Error saving customer data",
+        backendServerUrl: "Paystack Api route",
+        error: error, // Add your error message here
+      };
+      await writeToLogFile({ errorData });
+    } catch (err) {
+      console.error("Error writing to log file:", err);
+    }
   }
 };
 
 const updateAgentData = async (agentId, customerId) => {
   try {
-    console.log("From updateData:", agentId, customerId);
     if (agentId !== "admin") {
       await connectToDB();
       const agentData = await Agent.findById(agentId);
@@ -107,57 +138,18 @@ const updateAgentData = async (agentId, customerId) => {
       await agentData.save();
     }
   } catch (error) {
-    console.error("Error updating agent info", error);
+    try {
+      const errorData = {
+        errorMessage: "Error updating agent info",
+        backendServerUrl: "Paystack Api route",
+        error: error, // Add your error message here
+      };
+      await writeToLogFile({ errorData });
+    } catch (err) {
+      console.error("Error writing to log file:", err);
+    }
   }
 };
-// export const GET = async (req) => {
-//   try {
-//       if (req.method !== "GET") {
-//         const response = new Response(`Method ${req.method} Not Allowed`, {
-//           status: 405,
-//         });
-//         response.headers.set("Allow", "GET");
-//         return response;
-//       }
-//       const searchParams = req.nextUrl.searchParams;
-//       // const query = searchParams.get('query')
-//       const referenceNo = searchParams.get("reference");
-//       const refId = searchParams.get("refererId");
-
-//       console.log(referenceNo, refId);
-
-//       // Perform necessary validation on the reference parameter
-//       if (!referenceNo) {
-//         console.error("Reference parameter is missing");
-//         return new Response("Reference parameter is missing", { status: 400 });
-//       }
-
-//       // Perform any additional validation or processing logic here
-
-//       // Log the reference for debugging purposes
-//       console.log("Received reference:", referenceNo);
-//       const response = await getTransactionData(referenceNo);
-//       console.log("response from transaction data", response);
-//       if (response == 400) {
-//         console.error("Reference is invalid");
-//         return new Response("Invalid Reference", { status: 400 });
-//       }
-//       if (response.status === "success") {
-//         // Respond with a success message
-//         const referrerId = await getReferrerData(refId);
-//         const customerId = await saveCustomerData(referrerId, response);
-//         console.log(referrerId, customerId);
-//         await updateAgentData(referrerId, customerId);
-//         return new Response("Callback received successfully", { status: 200 });
-//       } else if (response.status == "fail") {
-//         return new Response("Payment Unsuccessful", { status: 401 });
-//       }
-//     } catch (error) {
-//       console.error("Error processing callback:", error);
-//       return new Response("Internal Server Error", { status: 500 });
-//     }
-
-// };
 
 export const POST = async (req) => {
   try {
@@ -173,22 +165,17 @@ export const POST = async (req) => {
       ? shopLoc.toString().replace(/[^a-zA-Z]/g, "")
       : null;
 
-    console.log(referenceNo, refId, shopLocation);
 
     // Perform necessary validation on the reference parameter
     if (!referenceNo) {
-      console.error("Reference parameter is missing");
       return new Response("Reference parameter is missing", { status: 400 });
     }
 
     // Perform any additional validation or processing logic here
 
     // Log the reference for debugging purposes
-    console.log("Received reference:", referenceNo);
     const response = await getTransactionData(referenceNo);
-    console.log("response from transaction data", response);
     if (response == 400) {
-      console.error("Reference is invalid");
       return new Response("Invalid Reference", { status: 400 });
     }
     if (response.status === "success") {
@@ -199,14 +186,24 @@ export const POST = async (req) => {
         response,
         shopLocation
       );
-      console.log(referrerId, customerId);
       await updateAgentData(referrerId, customerId);
       return new Response("Callback received successfully", { status: 200 });
     } else if (response.status == "fail") {
       return new Response("Payment Unsuccessful", { status: 401 });
     }
   } catch (error) {
-    console.error("Error processing callback:", error);
+    try {
+      const errorData = {
+        errorMessage: "Error processing callback",
+        referrerUrl: request.headers.referer,
+        backendServerUrl: request.url,
+        error: error, // Add your error message here
+        requestData: request, // Include the request data here
+      };
+      await writeToLogFile({ errorData });
+    } catch (err) {
+      console.error("Error writing to log file:", err);
+    }
     return new Response("Internal Server Error", { status: 500 });
   }
 };

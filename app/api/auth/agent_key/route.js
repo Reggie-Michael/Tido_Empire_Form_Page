@@ -1,5 +1,6 @@
 import SalesAgentKey from "@/models/agentKey";
 import { connectToDB } from "@/utils/database";
+import { writeToLogFile } from "@/utils/saveError";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 
@@ -12,7 +13,7 @@ const savedKeyData = {
 // const resetData
 const SECRET_KEY = process.env.SITE_SECRET; // Replace with your actual secret key
 
-const validateKey = (key) => {
+const validateKey = async (key) => {
   try {
     const inputLength = key?.length;
     const containsNonAlphaNumeric = /[^a-zA-Z0-9]/.test(key);
@@ -29,7 +30,16 @@ const validateKey = (key) => {
       return "pass";
     }
   } catch (error) {
-    console.error("Error validating key:", error);
+    try {
+      const errorData = {
+        errorMessage: "Error validating key:",
+        backendServerUrl: "Agent Key api route",
+        error: error, // Add your error message here
+      };
+      await writeToLogFile({ errorData });
+    } catch (err) {
+      console.error("Error writing to log file:", err);
+    }
   }
 };
 
@@ -46,8 +56,6 @@ export const GET = async (request) => {
   //     retryCountdown = null; // Reset the countdown timer
   //   }
 
-  console.log("Request received");
-  console.log("savedKeyData from get route", savedKeyData);
 
   try {
     //     if (numberOfTries === 0)
@@ -58,29 +66,25 @@ export const GET = async (request) => {
     //         }),
     //         { status: 403 }
     //       );
-        const authHeader = request.headers.get("Authorization");
-        console.log(typeof authHeader)
+    const authHeader = request.headers.get("Authorization");
 
-        if (!authHeader || typeof authHeader !== "string") {
-          return new Response(
-            JSON.stringify({
-              error: "Authorization header missing",
-              errorType: "authorizationHeaderMissing",
-            }),
-            {
-              status: 401,
-            }
-          );
+    if (!authHeader || typeof authHeader !== "string") {
+      return new Response(
+        JSON.stringify({
+          error: "Authorization header missing",
+          errorType: "authorizationHeaderMissing",
+        }),
+        {
+          status: 401,
         }
-  
-        // Extract the token from the Authorization header
-        const passKey = authHeader.split(" ")[1];
-    //     console.log("passKey", passKey);
+      );
+    }
+
+    // Extract the token from the Authorization header
+    const passKey = authHeader.split(" ")[1];
     const encodedKeyData = savedKeyData.keyData || passKey;
-    console.log(!encodedKeyData, encodedKeyData);
-    
+
     if (!encodedKeyData || encodedKeyData == "null") {
-      console.log("returning unauthorized");
       return new Response(
         JSON.stringify({
           error: "No saved Data available!",
@@ -91,11 +95,9 @@ export const GET = async (request) => {
     }
     const decodedKeyData = jwt.verify(encodedKeyData, SECRET_KEY);
 
-    console.log(decodedKeyData)
     const keyId = decodedKeyData.keyId;
     const keyType = decodedKeyData.type;
 
-    console.log(keyId, keyType)
     try {
       await connectToDB();
       // Check if the key exists
@@ -152,48 +154,69 @@ export const GET = async (request) => {
         }
       );
     } catch (error) {
-      console.error("Error contacting database", error);
+      try {
+        const errorData = {
+          errorMessage: "Error contacting database",
+          referrerUrl: request.headers.referer,
+          backendServerUrl: request.url,
+          error: error, // Add your error message here
+          requestData: request, // Include the request data here
+        };
+        await writeToLogFile({ errorData });
+      } catch (err) {
+        console.error("Error writing to log file:", err);
+      }
       return new Response(
         JSON.stringify({ success: false, message: "Error verifying key" }),
         { status: 500 }
       );
     }
   } catch (error) {
-    console.error("Error getting access status", error);
+   
     if (error.name === "TokenExpiredError") {
-     // Return error response for expired token
-     return new Response(
-       JSON.stringify({
-         success: false,
-         error: true,
-         errorType: "sessionExpired",
-         errorMessage: "Your key session has expired. Please try again",
-       }),
-       {
-         status: 400,
-       }
-     );
-   } else {
-     // Return error response for invalid token
-     return new Response(
-       JSON.stringify({
-         success: false,
-         error: true,
-         errorStatus: "serverError",
-         errorMessage:
-           "An unexpected error occurred. Please try again later",
-       }),
-       {
-         status: 500,
-       }
-     );
-   }
+      // Return error response for expired token
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: true,
+          errorType: "sessionExpired",
+          errorMessage: "Your key session has expired. Please try again",
+        }),
+        {
+          status: 400,
+        }
+      );
+    } else {
+      // Return error response for invalid token
+      try {
+        const errorData = {
+          errorMessage: "Error in Agent Key Verification(Get)",
+          referrerUrl: request.headers.referer,
+          backendServerUrl: request.url,
+          error: error, // Add your error message here
+          requestData: request, // Include the request data here
+        };
+        await writeToLogFile({ errorData });
+      } catch (err) {
+        console.error("Error writing to log file:", err);
+      }
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: true,
+          errorStatus: "serverError",
+          errorMessage: "An unexpected error occurred. Please try again later",
+        }),
+        {
+          status: 500,
+        }
+      );
+    }
   }
 };
 
 export const POST = async (request) => {
   try {
-    console.log("request received");
     if (request.method !== "POST") {
       return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
         status: 405,
@@ -211,12 +234,9 @@ export const POST = async (request) => {
     //       }),
     //       { status: 403 }
     //     );
-    console.log("Key Processing");
     const { key } = await request.json();
-    console.log(key);
 
     if (!key) {
-      console.log("Key not present");
       return new Response(
         JSON.stringify({
           error: "Key and Mode need to be present",
@@ -225,11 +245,8 @@ export const POST = async (request) => {
         { status: 400 }
       );
     }
-    console.log("Key validating...");
     const returnErrorMessage = validateKey(key);
-    console.log("Key validated", returnErrorMessage);
     if (returnErrorMessage !== "pass") {
-      console.log("validation fail!");
       //     if (numberOfTr ies <= 1) {
       //       // If maximum number of tries reached, set the countdown timer
       //       retryCountdown = new Date(Date.now() + 10 * 60 * 1000); // Set countdown timer for 30 minutes
@@ -243,13 +260,11 @@ export const POST = async (request) => {
         { status: 400 }
       );
     }
-    console.log("Key Processed");
 
     try {
       await connectToDB();
       // Check if the key exists
       const keyData = await SalesAgentKey.findOne({ key: key, expired: false });
-      console.log(keyData)
 
       if (!keyData) {
         // Key does not exist
@@ -287,16 +302,17 @@ export const POST = async (request) => {
       //    retryCountdown = new Date(Date.now() + 10 * 60 * 1000); // Set countdown timer for 10 minutes
       //  }
       //  numberOfTries--;
-      const keyToken = jwt.sign({ keyId: keyData._id, type: keyData.type }, SECRET_KEY, {
-        expiresIn: "3h",
-      });
-      console.log("token generated");
+      const keyToken = jwt.sign(
+        { keyId: keyData._id, type: keyData.type },
+        SECRET_KEY,
+        {
+          expiresIn: "3h",
+        }
+      );
 
       // savedKeyData.keyId = keyData.type;
       savedKeyData.keyData = keyToken;
       savedKeyData.verified = true;
-      
-      console.log("Key successfully saved");
       return new Response(
         JSON.stringify({
           success: true,
@@ -309,15 +325,38 @@ export const POST = async (request) => {
         }
       );
     } catch (error) {
-      console.error("Error contacting database", error);
+      try {
+        const errorData = {
+          errorMessage: "Error contacting database",
+          referrerUrl: request.headers.referer,
+          backendServerUrl: request.url,
+          error: error, // Add your error message here
+          requestData: request, // Include the request data here
+        };
+        await writeToLogFile({ errorData });
+      } catch (err) {
+        console.error("Error writing to log file:", err);
+      }
       return new Response(
         JSON.stringify({ success: false, message: "Error verifying key" }),
         { status: 500 }
       );
     }
   } catch (error) {
+    try {
+      const errorData = {
+        errorMessage: "Error in Agent Key Verification(Post)",
+        referrerUrl: request.headers.referer,
+        backendServerUrl: request.url,
+        error: error, // Add your error message here
+        requestData: request, // Include the request data here
+      };
+      await writeToLogFile({ errorData });
+    } catch (err) {
+      console.error("Error writing to log file:", err);
+    }
     return new Response(JSON.stringify({ message: "Internal Server Error" }), {
       status: 500,
     });
-  } 
+  }
 };

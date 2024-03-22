@@ -26,6 +26,18 @@ const CustomerSchema = new Schema({
     type: String,
     required: [true, "Email is required!"],
   },
+  // address: {
+  //   type: String,
+  // },
+  // nationality: {
+  //   type: String,
+  // },
+  // stateOfOrigin: {
+  //   type: String,
+  // },
+  // occupation: {
+  //   type: String,
+  // },
   shopLocation: {
     type: String,
   },

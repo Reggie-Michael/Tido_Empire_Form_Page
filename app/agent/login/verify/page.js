@@ -122,7 +122,6 @@ const ValidationPage = () => {
         warn(data.error);
       }
     } catch (error) {
-      console.error("Error sending verification code:", error);
       warn("An unexpected error occurred. Please try again later.");
     } finally {
       setSubmitting(false);
@@ -153,7 +152,6 @@ const ValidationPage = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.authorized) {
-          console.log("Access is verified");
           // Set email state here if needed
           setEmail(data.userEmail);
         }
@@ -161,7 +159,6 @@ const ValidationPage = () => {
         handleErrorResponse(response);
       }
     } catch (error) {
-      console.error("An error occurred", error);
       warn("Sorry, please contact Tido Empire and try again later.");
     }
   }, [router]); // No dependencies here because fetch is used internally
@@ -187,7 +184,6 @@ const ValidationPage = () => {
         handleErrorResponse(response);
       }
     } catch (error) {
-      console.error("An error occurred", error);
       warn("Sorry, please contact Tido Empire and try again later.");
     } finally {
       setSubmitting(false);

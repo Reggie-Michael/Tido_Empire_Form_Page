@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import Agent from "@/models/agent";
 import fs from "fs";
+import { join } from "path";
+
 import path from "path";
 import { connectToDB } from "@/utils/database";
 import nodemailer from "nodemailer";
@@ -9,8 +11,10 @@ import SalesAgentKey from "@/models/agentKey";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import sgMail from "@sendgrid/mail";
+import { uploadFile } from "@/utils/driveUpload";
+import { writeToLogFile } from "@/utils/saveError";
 const SECRET_KEY = process.env.SITE_SECRET; // Replace with your actual secret key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const formData = {
   fName: "",
@@ -65,7 +69,6 @@ const validateMainName = (name) => {
   const nameRegex = /^[a-zA-Z ]+$/;
   try {
     let message = null;
-    console.log("validating main name");
 
     if (!name) {
       message = { error: "inputNull", type: "fNameNull" };
@@ -74,11 +77,9 @@ const validateMainName = (name) => {
     } else if (!isWithinLengthRange(name, minLength, maxLength)) {
       message = { error: "minMaxInvalid", type: "fNameVoidCharLength" };
     }
-    console.log("Validated MainName");
 
     return message ? message : "passCheck";
   } catch (error) {
-    console.error("Error validating mainName", error);
     return "internalValidationError";
   }
 };
@@ -89,7 +90,6 @@ const validateOtherName = (name) => {
 
   try {
     let message = null;
-    console.log("Validating OtherName");
 
     if (agency !== "company") {
       if (!name) {
@@ -100,28 +100,23 @@ const validateOtherName = (name) => {
         message = { error: "minMaxInvalid", type: "lNameVoidCharLength" };
       }
     }
-    console.log("Validated OtherName");
 
     return message ? message : "passCheck";
   } catch (error) {
-    console.error("Error validating otherName", error);
     return "internalValidationError";
   }
 };
 const validateEmail = (email) => {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/i;
-  console.log("Validating Email");
   try {
     if (!email) {
       return { error: "inputNull", type: "emailNull" };
     } else if (!isValidExpression(email, emailRegex)) {
       return { error: "validateError", type: "emailValidateError" };
     }
-    console.log("Validated Email");
 
     return "passCheck";
   } catch (error) {
-    console.error("Error validating email", error);
     return "internalValidationError";
   }
 };
@@ -132,7 +127,6 @@ const validatePhoneNumber = (phoneNumber) => {
 
   try {
     let message = null;
-    console.log("Validating PNumber");
 
     if (!phoneNumber) {
       message = { error: "inputNull", type: "pNumberNull" };
@@ -141,11 +135,9 @@ const validatePhoneNumber = (phoneNumber) => {
     } else if (!isWithinLengthRange(phoneNumber, minLength, maxLength)) {
       message = { error: "minMaxInvalid", type: "pNumberVoidCharLength" };
     }
-    console.log("Validated Phone Number");
 
     return message ? message : "passCheck";
   } catch (error) {
-    console.error("Error validating pNumber", error);
     return "internalValidationError";
   }
 };
@@ -157,31 +149,21 @@ const validateCacNumber = (cacNo) => {
   try {
     let message = null;
 
-    console.log("Validating CacNo");
-    console.log(typeof cacNo);
-
     if (!cacNo) {
-      console.log("No cacNo");
       message = { error: "inputNull", type: "cacNoNull" };
     } else if (!isValidExpression(cacNo, cacNoRegex)) {
-      console.log("Cac Number validate error");
       message = { error: "validateError", type: "cacNoValidateError" };
     } else if (!isWithinLengthRange(cacNo, minLength, maxLength)) {
-      console.log("cacNo length validate error");
       message = { error: "minMaxInvalid", type: "cacNoVoidCharLength" };
     }
 
-    console.log("Validated CacNo");
-
     return message ? message : "passCheck";
   } catch (error) {
-    console.error("error validating cacNo", error);
     return "internalValidationError";
   }
 };
 const validateAddress = (address) => {
   const addressRegex = /^[a-zA-Z0-9\+\-\@ ]+$/;
-  console.log("Validating Address");
 
   try {
     if (!address) {
@@ -190,16 +172,12 @@ const validateAddress = (address) => {
       return { error: "validateError", type: "addressValidateError" };
     }
 
-    console.log("Validated Address");
-
     return "passCheck";
   } catch (error) {
-    console.error("Error validating Address", error);
     return "internalValidationError";
   }
 };
 const validateImage = (image) => {
-  console.log("Validating Image");
   try {
     if (image) {
       const allowedImageTypes = ["jpg", "jpeg", "png"];
@@ -237,36 +215,54 @@ const validateImage = (image) => {
       const message = { error: "inputNull", type: "imageNull" };
       return message;
     }
-    console.log("ValidatedImage");
 
     return "passCheck";
   } catch (error) {
-    console.error("Error validating Image", error);
     return "internalValidationError";
   }
 };
 
 // Function to save the image
 const saveImage = async (imageFile, imageName) => {
-  const uploadFolder = "./app/uploads"; // Update this with your actual path
+  const folderId = process.env.GOOGLE_DRIVE_AGENT_FOLDER;
+  const uploadFolder = "./data/uploads"; // Update this with your actual path
 
   // Get the file extension from the image file name
   const fileExtension = imageFile.name.split(".").pop();
 
   // Append the file extension to the image name
-  const imagePath = `${uploadFolder}/${imageName}.${fileExtension}`;
+  const tempFileName = `${imageName}.${fileExtension}`;
+
+  // Path to the temporary file
+  const tempFilePath = join(uploadFolder, tempFileName);
 
   try {
     // Convert the image data to a Buffer
     const imageData = Buffer.from(await imageFile.arrayBuffer());
 
-    // Write the image data to the file
-    fs.writeFileSync(imagePath, imageData);
+    // Write the image data to the temporary file
+    fs.writeFileSync(tempFilePath, imageData);
 
-    return imagePath;
+    // Upload the temporary file to Google Drive
+    await uploadFile(tempFilePath, imageName, folderId);
+
+    // Return the temporary file path
+    return `${folderId}/imageName`;
   } catch (error) {
-    console.error("Error saving image:", error);
-    return null; // Return null if there was an error saving the image
+    try {
+      const errorData = {
+        errorMessage: "Error in Signup Saving image Function",
+        backendServerUrl: "api/auth/signup",
+        error: error, // Add your error message here
+      };
+      await writeToLogFile({ errorData });
+    } catch (err) {
+      console.error("Error writing to log file:", err);
+    }
+    return null; // Return null if there was an error
+  } finally {
+    // Delete the temporary file after uploading
+    fs.unlinkSync(tempFilePath);
   }
 };
 // Create a Nodemailer transporter
@@ -279,7 +275,6 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_SERVER_PASSWORD,
   },
 });
-
 
 // Function to generate a random verification code
 // const generateVerificationCode = () => {
@@ -294,7 +289,6 @@ const generateVerificationCode = () => {
 // Function to send verification code to email
 const sendVerificationCode = async (email) => {
   const { verificationCode, expirationTime } = generateVerificationCode();
-console.log(verificationCode, expirationTime)
   const mailOptions = {
     from: process.env.EMAIL_SERVER_USER,
     to: email,
@@ -308,18 +302,25 @@ console.log(verificationCode, expirationTime)
   //   text: 'and easy to do anywhere, even with Node.js',
   //   html: '<strong>and easy to do anywhere, even with Node.js</strong>',
   // }
-  
-   
+
   try {
     // Send the email
     await transporter.sendMail(mailOptions);
     // await sgMail.send(msg)
-    console.log("Verification code sent successfully.");
-    console.log('Email sent')
 
     return { verificationCode, expirationTime }; // Return the verification code so it can be verified later
   } catch (error) {
-    console.error("Error sending verification code:", error);
+    try {
+      const errorData = {
+        errorMessage: "Error in Signup Verification Code Generation",
+        referrerUrl: request.headers.referer,
+        backendServerUrl: "api/auth/signup",
+        error: error, // Add your error message here
+      };
+      await writeToLogFile({ errorData });
+    } catch (err) {
+      console.error("Error writing to log file:", err);
+    }
     throw new Error("Failed to send verification code");
   }
 };
@@ -352,9 +353,8 @@ const inputVoid = () => {
   });
 };
 
-const validateCode = (verificationCode) => {
+const validateCode = async (verificationCode) => {
   try {
-    console.log("Validating verification code");
     const message = {
       codeValid: true,
       errorType: "",
@@ -375,7 +375,16 @@ const validateCode = (verificationCode) => {
 
     return message;
   } catch (error) {
-    console.error("Error Validation", error);
+    try {
+      const errorData = {
+        errorMessage: "Error in Verfication code Vallidation",
+        backendServerUrl: "api/auth/signup",
+        error: error, // Add your error message here
+      };
+      await writeToLogFile({ errorData });
+    } catch (err) {
+      console.error("Error writing to log file:", err);
+    }
   }
 };
 
@@ -399,28 +408,46 @@ const generateAgencyKey = async (type) => {
       },
     });
 
-    //     console.log(response);
     // Check if the request was successful
     if (response.ok) {
       // Parse the response JSON
       const data = await response.json();
       // Return the transaction data
-      console.log("returning data ", data);
       return {
         success: true,
         agentKey: data?.key,
       };
     } else {
       // Handle error response
-      console.error("Error generating agency key:", response.status);
-      // console.log(response);
+      try {
+        const errorData = {
+          errorMessage: "Error generating agency key: signup route",
+          referrerUrl: response?.headers?.referer,
+          backendServerUrl: response?.url,
+          error: error, // Add your error message here
+          requestData: response, // Include the request data here
+        };
+        await writeToLogFile({ errorData });
+      } catch (err) {
+        console.error("Error writing to log file:", err);
+      }
       return {
         success: false,
         errorStatus: response.status,
       };
     }
   } catch (error) {
-    console.error("An error occurred while generating agent key:", error);
+    try {
+      const errorData = {
+        errorMessage: "An error occurred while generating agent key:",
+        referrerUrl: response?.headers?.referer,
+        backendServerUrl: "api/auth/signup",
+        error: error, // Add your error message here
+      };
+      await writeToLogFile({ errorData });
+    } catch (err) {
+      console.error("Error writing to log file:", err);
+    }
     return {
       success: false,
       errorStatus: 500,
@@ -441,11 +468,7 @@ export const GET = async (request) => {
     retryCountdown = null; // Reset the countdown timer
   }
 
-  console.log("Request received");
-  console.log("formData from get route", formData, agency);
-
   try {
-    console.log("Particular Needed field is void", inputVoid());
     if (numberOfTries === 0)
       return new Response(
         JSON.stringify({
@@ -456,25 +479,21 @@ export const GET = async (request) => {
       );
     if (agency && formData) {
       if (!inputVoid()) {
-        console.log("Resend verification route");
         const searchParams = request.nextUrl.searchParams;
         // const query = searchParams.get('query')
         const resendVerification = searchParams.get("retry");
-        console.log("resendVerification", resendVerification);
         const email = formData?.email;
         const maskedEmail = maskEmail(email);
         try {
           if (resendVerification) {
             const verificationMessage = await sendVerificationCode(email)
               .then((result) => {
-                console.log("Verification code:", result?.verificationCode);
                 return result;
               })
               .catch((error) => {
-                console.error("Error", error);
+                console.log("Error in send verification", error);
               });
 
-            console.log("Verification Message", verificationMessage);
             verificationData.code = verificationMessage.verificationCode;
             verificationData.expTime = verificationMessage.expirationTime;
             if (numberOfTries <= 1) {
@@ -482,7 +501,6 @@ export const GET = async (request) => {
               retryCountdown = new Date(Date.now() + 10 * 60 * 1000); // Set countdown timer for 30 minutes
             }
             numberOfTries--;
-            console.log("Resend verification route closed");
 
             return new Response(
               JSON.stringify({
@@ -497,7 +515,18 @@ export const GET = async (request) => {
             );
           }
         } catch (error) {
-          console.error(error);
+          try {
+            const errorData = {
+              errorMessage: "error sending verification code",
+              referrerUrl: request.headers.referer,
+              backendServerUrl: request.url,
+              error: error, // Add your error message here
+              requestData: request, // Include the request data here
+            };
+            await writeToLogFile({ errorData });
+          } catch (err) {
+            console.error("Error writing to log file:", err);
+          }
         }
         return new Response(
           JSON.stringify({
@@ -536,7 +565,18 @@ export const GET = async (request) => {
       );
     }
   } catch (error) {
-    console.error("Error getting access status", error);
+    try {
+      const errorData = {
+        errorMessage: "Error getting access status(Get signup route)",
+        referrerUrl: request.headers.referer,
+        backendServerUrl: request.url,
+        error: error, // Add your error message here
+        requestData: request, // Include the request data here
+      };
+      writeToLogFile({ errorData });
+    } catch (err) {
+      console.error("Error writing to log file:", err);
+    }
     return new Response(
       JSON.stringify({
         success: false,
@@ -551,10 +591,6 @@ export const GET = async (request) => {
 
 export const POST = async (request) => {
   try {
-    console.log("request received");
-    console.log("formData", formData);
-    // const submissionState = request.headers.get("Submission-State");
-    // console.log(submissionState);
     if (request.method !== "POST") {
       return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
         status: 405,
@@ -567,31 +603,24 @@ export const POST = async (request) => {
     let newFormData = null;
     try {
       newFormData = await request.formData();
-    } catch (error) {
-      console.error("Error parsing request form:", error.message);
-    }
+    } catch (error) {}
 
     // Check if the request body contains JSON data
     let requestBody = null;
     try {
       requestBody = await request.json();
-    } catch (error) {
-      console.error("Error parsing request body as JSON:", error.message);
-    }
+    } catch (error) {}
     // Determine the submission state based on the presence of formData
     const submissionState = newFormData ? "initial" : "verification";
 
     if (submissionState == "initial") {
       try {
-        console.log("form Processing");
         // const newFormData = await request.formData();
         // const formDataKeys = Object.keys(formData);
         // const formDataMatch = formDataKeys.every(
         //   (key) => formData[key] === newFormData.get(key)
         // );
 
-        console.log(newFormData);
-        console.log(numberOfTries);
         // const agency = newFormData.get("agency");
 
         if (numberOfTries === 0)
@@ -646,8 +675,6 @@ export const POST = async (request) => {
                 );
               }
               const nameType = agency === "company" ? "Company" : "Agent";
-
-              console.log("nameType", nameType);
               const existingAgentName = await Agent.findOne({
                 mainName: formData?.fName || formData?.companyName,
               });
@@ -676,10 +703,8 @@ export const POST = async (request) => {
                 ],
               });
 
-              console.log(existingAgent);
               if (existingAgent) {
                 const agentId = existingAgent._id;
-                console.log("Agent Exist and is being logged in");
                 // const returnRef = `${process.env.SITE_URL}/?r=${agentId}`;
 
                 if (passData.type !== "agency") {
@@ -716,7 +741,6 @@ export const POST = async (request) => {
                 // If a document with the same name is found, return an error response
                 const nameErrorType =
                   agency === "company" ? "nameExist" : "companyExist";
-                console.log(nameErrorType);
                 resetData();
                 return new Response(
                   JSON.stringify({
@@ -773,14 +797,11 @@ export const POST = async (request) => {
               const email = formData?.email;
               const verificationMessage = await sendVerificationCode(email)
                 .then((result) => {
-                  console.log("Verification code:", result?.verificationCode);
                   return result;
                 })
                 .catch((error) => {
-                  console.error("Error", error);
+                  console.log("Error in send verification", error);
                 });
-
-              console.log("Verification Message", verificationMessage);
               verificationData.code = verificationMessage.verificationCode;
               verificationData.expTime = verificationMessage.expirationTime;
               return new Response(
@@ -793,26 +814,20 @@ export const POST = async (request) => {
                   headers: { "Content-Type": "application/json" },
                 }
               );
-              // try {
-              // } catch (error) {
-              //   console.error("error sending mail", error);
-              // }
-              // Find the existing prompt by ID
-              // const existingPrompt = await Prompt.findById(params.id);
-
-              // if (!existingPrompt) {
-              //     return new Response("Prompt not found", { status: 404 });
-              // }
-
-              // // Update the prompt with new data
-              // existingPrompt.prompt = prompt;
-              // existingPrompt.tag = tag;
-
-              // await existingPrompt.save();
-
-              // return new Response("Successfully updated the Prompts", { status: 200 });
             } catch (error) {
-              console.error("Error validating with database", error);
+              try {
+                const errorData = {
+                  errorMessage:
+                    "Error Performing Database Validation(initial signup/continue on abrupt leave)",
+                  referrerUrl: request.headers.referer,
+                  backendServerUrl: request.url,
+                  error: error, // Add your error message here
+                  requestData: request, // Include the request data here
+                };
+                await writeToLogFile({ errorData });
+              } catch (err) {
+                console.error("Error writing to log file:", err);
+              }
               return new Response("Error Performing Database Validation", {
                 status: 500,
               });
@@ -836,7 +851,6 @@ export const POST = async (request) => {
 
         //     //
         agency = newFormData.get("agency");
-        console.log("Checking Agency");
         if (!agency || !["company", "individual"].includes(agency)) {
           return new Response(
             JSON.stringify({
@@ -846,9 +860,7 @@ export const POST = async (request) => {
             { status: 400 }
           );
         }
-        console.log(agency);
         // Define validation rules based on agency type
-        console.log("Validation Rule called");
 
         const validationRules = {
           common: {
@@ -871,10 +883,8 @@ export const POST = async (request) => {
             lName: validateOtherName(newFormData.get("lName"), 2, 15, "lName"),
           },
         };
-        console.log("Validating Form Data");
 
         // Validate form data
-        console.log("Validating Form Data");
         const errors = {};
         const rules = validationRules[agency];
         Object.keys(rules).forEach((field) => {
@@ -894,11 +904,7 @@ export const POST = async (request) => {
           (field) => errors[field] !== "passCheck"
         );
 
-        console.log("errorFields", errorFields);
-        console.log("errors", errors);
-
         // Check for internal server error
-        console.log("checking for server error");
         // Check if any value in the errors object is equal to the desired error value
         if (
           Object.values(errors).some(
@@ -906,11 +912,9 @@ export const POST = async (request) => {
           )
         ) {
           // Handle the case where the desired error value is found
-          console.log("returning 500");
           return new Response("Internal server error", { status: 500 });
         }
 
-        console.log("checking for other error");
         if (errorFields.length > 0) {
           return new Response(
             JSON.stringify({ error: "Validation failed", errors }),
@@ -928,8 +932,6 @@ export const POST = async (request) => {
           // formData.append(name, value);
           formData[name] = value;
         }
-        console.log(agency);
-        console.log(formData);
 
         // Form data is valid, proceed with processing
         try {
@@ -958,7 +960,6 @@ export const POST = async (request) => {
           }
           const nameType = agency === "company" ? "Company" : "Agent";
 
-          console.log("nameType", nameType);
           const existingAgentName = await Agent.findOne({
             mainName: formData?.fName || formData?.companyName,
           });
@@ -987,10 +988,8 @@ export const POST = async (request) => {
             ],
           });
 
-          console.log(existingAgent);
           if (existingAgent) {
             const agentId = existingAgent._id;
-            console.log("Agent Exist and is being logged in");
             // const returnRef = `${process.env.SITE_URL}/?r=${agentId}`;
             if (passData.type !== "agency") {
               try {
@@ -1024,7 +1023,6 @@ export const POST = async (request) => {
             // If a document with the same name is found, return an error response
             const nameErrorType =
               agency === "company" ? "nameExist" : "companyExist";
-            console.log(nameErrorType);
             resetData();
             return new Response(
               JSON.stringify({
@@ -1081,14 +1079,12 @@ export const POST = async (request) => {
           const email = formData?.email;
           const verificationMessage = await sendVerificationCode(email)
             .then((result) => {
-              console.log("Verification code:", result?.verificationCode);
               return result;
             })
             .catch((error) => {
-              console.error("Error", error);
+              console.log("Error in send verification", error);
             });
 
-          console.log("Verification Message", verificationMessage);
           verificationData.code = verificationMessage.verificationCode;
           verificationData.expTime = verificationMessage.expirationTime;
           return new Response(
@@ -1101,32 +1097,37 @@ export const POST = async (request) => {
               headers: { "Content-Type": "application/json" },
             }
           );
-          // try {
-          // } catch (error) {
-          //   console.error("error sending mail", error);
-          // }
-          // Find the existing prompt by ID
-          // const existingPrompt = await Prompt.findById(params.id);
-
-          // if (!existingPrompt) {
-          //     return new Response("Prompt not found", { status: 404 });
-          // }
-
-          // // Update the prompt with new data
-          // existingPrompt.prompt = prompt;
-          // existingPrompt.tag = tag;
-
-          // await existingPrompt.save();
-
-          // return new Response("Successfully updated the Prompts", { status: 200 });
         } catch (error) {
-          console.error("Error validating with database", error);
+          try {
+            const errorData = {
+              errorMessage:
+                "Error Performing Database Validation(initial signup)",
+              referrerUrl: request.headers.referer,
+              backendServerUrl: request.url,
+              error: error, // Add your error message here
+              requestData: request, // Include the request data here
+            };
+            await writeToLogFile({ errorData });
+          } catch (err) {
+            console.error("Error writing to log file:", err);
+          }
           return new Response("Error Performing Database Validation", {
             status: 500,
           });
         }
       } catch (error) {
-        console.error(error);
+        try {
+          const errorData = {
+            errorMessage: "Error storing agent signup data(initial signup)",
+            referrerUrl: request.headers.referer,
+            backendServerUrl: request.url,
+            error: error, // Add your error message here
+            requestData: request, // Include the request data here
+          };
+          await writeToLogFile({ errorData });
+        } catch (err) {
+          console.error("Error writing to log file:", err);
+        }
       }
     } else if (submissionState == "verification") {
       if (retryCountdown && new Date() > retryCountdown) {
@@ -1141,8 +1142,6 @@ export const POST = async (request) => {
           }),
           { status: 403 }
         );
-      // const requestBody = await request.json();
-      console.log(requestBody, newFormData);
 
       if (!passData.id) {
         return new Response(
@@ -1174,7 +1173,6 @@ export const POST = async (request) => {
           { status: 400 }
         );
       if (isCodeExpired(verificationData.expTime)) {
-        console.log("Code is expired", verificationData.expTime);
         if (numberOfTries <= 1) {
           // If maximum number of tries reached, set the countdown timer
           retryCountdown = new Date(Date.now() + 30 * 60 * 1000); // Set countdown timer for 30 minutes
@@ -1183,14 +1181,12 @@ export const POST = async (request) => {
         const email = formData?.email;
         const verificationMessage = await sendVerificationCode(email)
           .then((result) => {
-            console.log("Verification code:", result?.verificationCode);
             return result;
           })
           .catch((error) => {
-            console.error("Error", error);
+            console.log("Error in send verification", error);
           });
 
-        console.log("Verification Message", verificationMessage);
         verificationData.code = verificationMessage.verificationCode;
         verificationData.expTime = verificationMessage.expirationTime;
         return new Response(
@@ -1201,10 +1197,8 @@ export const POST = async (request) => {
           { status: 400 }
         );
       }
-      console.log("Verifying code");
       const savedVerificationCode = verificationData.code;
       const codeValidation = validateCode(userVerificationCode);
-      console.log(codeValidation);
       if (!codeValidation.codeValid) {
         if (numberOfTries <= 1) {
           // If maximum number of tries reached, set the countdown timer
@@ -1219,13 +1213,11 @@ export const POST = async (request) => {
           { status: 400 }
         );
       }
-      console.log("crosschecking verification");
 
       if (
         userVerificationCode.toString().trim() !==
         savedVerificationCode.toString().trim()
       ) {
-        console.log("crosschecking verification false");
         if (numberOfTries <= 1) {
           // If maximum number of tries reached, set the countdown timer
           retryCountdown = new Date(Date.now() + 30 * 60 * 1000); // Set countdown timer for 30 minutes
@@ -1233,14 +1225,12 @@ export const POST = async (request) => {
         numberOfTries--;
         const verificationMessage = await sendVerificationCode(email)
           .then((result) => {
-            console.log("Verification code:", result?.verificationCode);
             return result;
           })
           .catch((error) => {
-            console.error("Error", error);
+            console.log("Error in send verification", error);
           });
 
-        console.log("Verification Message", verificationMessage);
         verificationData.code = verificationMessage.verificationCode;
         verificationData.expTime = verificationMessage.expirationTime;
         return new Response(
@@ -1248,7 +1238,6 @@ export const POST = async (request) => {
           { status: 400 }
         );
       }
-      console.log("savingImage");
       // Save the image
       const imageFile = formData?.image;
       const imageName =
@@ -1256,12 +1245,10 @@ export const POST = async (request) => {
           ? `${formData?.companyName}_Logo`
           : `${formData?.fName}_${formData?.lName}_profilePicture`;
       const imagePath = await saveImage(imageFile, imageName);
-      console.log(imagePath);
       try {
         await connectToDB();
         const keyExist = await SalesAgentKey.findById(passData.id);
 
-        console.log("keyExist:", keyExist);
         if (!keyExist) {
           return new Response(
             JSON.stringify({
@@ -1293,20 +1280,12 @@ export const POST = async (request) => {
           );
         }
         const company = await Agent.findOne({ key: keyExist.key });
-        console.log(company, !company);
         const companyKey =
           agency !== "company" && keyExist.type == "agency"
             ? passData?.id
             : null;
         const companyRelationId =
           !company || company == null ? company : company?._id;
-
-        console.log(
-          "CompanyKey and Id and companyRelation:",
-          companyKey,
-          keyExist._id,
-          companyRelationId
-        );
 
         const agentName = `${formData?.fName || formData?.companyName} ${
           formData?.lName
@@ -1327,13 +1306,10 @@ export const POST = async (request) => {
           referral: `${agentName}_ref_120`,
           creationDate: new Date().toISOString(),
         });
-        console.log("newAgent", newAgent);
         await newAgent.save();
         const agentId = newAgent._id;
-        console.log(agentId);
         // const returnRef = `${process.env.SITE_URL}/?r=${agentId}`;
         const keyStillExist = await SalesAgentKey.findById(passData.id);
-        console.log("keyStillExist", keyStillExist);
         if (!keyStillExist) {
           return new Response(
             JSON.stringify({
@@ -1364,32 +1340,20 @@ export const POST = async (request) => {
             headers: { "Content-Type": "application/json" },
           }
         );
-        // const combinedData = `${agentId}-${agentName}`;
-
-        // Use the combined data as the secret key for hashing
-        // const hash = crypto.createHmac("sha256", agentId.toString());
-        // hash.update(combinedData);
-        // const hashedData = hash.digest("hex");
-
-        // // Now you can use the hashedData as needed
-        // console.log("Hashed Data:", hashedData);
-
-        // Find the existing prompt by ID
-        // const existingPrompt = await Prompt.findById(params.id);
-
-        // if (!existingPrompt) {
-        //     return new Response("Prompt not found", { status: 404 });
-        // }
-
-        // // Update the prompt with new data
-        // existingPrompt.prompt = prompt;
-        // existingPrompt.tag = tag;
-
-        // await existingPrompt.save();
-
-        // return new Response("Successfully updated the Prompts", { status: 200 });
       } catch (error) {
-        console.error("Error contacting database", error);
+        try {
+          const errorData = {
+            errorMessage:
+              "Error Performing Database Validation(verification code signup)",
+            referrerUrl: request.headers.referer,
+            backendServerUrl: request.url,
+            error: error, // Add your error message here
+            requestData: request, // Include the request data here
+          };
+          await writeToLogFile({ errorData });
+        } catch (err) {
+          console.error("Error writing to log file:", err);
+        }
         return new Response(
           JSON.stringify({ message: "Error Creating Agent", type: null }),
           { status: 500 }
@@ -1405,6 +1369,18 @@ export const POST = async (request) => {
       );
     }
   } catch (error) {
+    try {
+      const errorData = {
+        errorMessage: "Error in Agent Signup(POST) route",
+        referrerUrl: request.headers.referer,
+        backendServerUrl: request.url,
+        error: error, // Add your error message here
+        requestData: request, // Include the request data here
+      };
+      await writeToLogFile({ errorData });
+    } catch (err) {
+      console.error("Error writing to log file:", err);
+    }
     return new Response(
       JSON.stringify({ message: "Internal Server Error", type: null }),
       { status: 500 }

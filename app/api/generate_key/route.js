@@ -3,6 +3,7 @@ import { connectToDB } from "@/utils/database";
 import crypto from "crypto";
 import SalesAgentKey from "@/models/agentKey";
 import mongoose from "mongoose";
+import { writeToLogFile } from "@/utils/saveError";
 
 const SECRET_KEY = process.env.SITE_SECRET; // Replace with your actual secret key
 let numberOfTries = 3;
@@ -14,7 +15,6 @@ const getRandomKey = () => {
   let key = "";
   //   const length = 20; // Set the desired length of the key
   const length = Math.floor(Math.random() * (20 - 12 + 1)) + 12; // Set the desired length of the key
-  console.log(`generating random key of length ${length}`);
   for (let i = 0; i < length; i++) {
     const randomIndex = Math.floor(Math.random() * characters.length);
     key += characters[randomIndex];
@@ -23,7 +23,7 @@ const getRandomKey = () => {
   return key;
 };
 
-const validateKey = (key) => {
+const validateKey = async (key) => {
   try {
     const inputLength = key?.length;
     const containsNonAlphaNumeric = /[^a-zA-Z0-9]/.test(key);
@@ -40,7 +40,16 @@ const validateKey = (key) => {
       return "pass";
     }
   } catch (error) {
-    console.error("Error validating key:", error);
+    try {
+      const errorData = {
+        errorMessage: "Error validating key:",
+        backendServerUrl: "Agent Key generate and delete api route",
+        error: error, // Add your error message here
+      };
+      await writeToLogFile({ errorData });
+    } catch (err) {
+      console.error("Error writing to log file:", err);
+    }
   }
 };
 
@@ -64,8 +73,7 @@ export const GET = async (request) => {
       }),
       { status: 403 }
     );
-  console.log("Request received");
-  // console.log(request)
+
   // Extract query parameters from the request
   const authHeader = request.headers.get("Authorization");
   if (!authHeader) {
@@ -83,15 +91,10 @@ export const GET = async (request) => {
   // Extract the token from the Authorization header
   const token = authHeader.split(" ")[1];
   // Use the extracted parameters or fallback to default values
-  //   console.log(token.length);
   const searchParams = request.nextUrl.searchParams;
   const keyType = searchParams.get("type");
 
   try {
-    // Verify the token
-    // console.log(tokenData);
-    // console.log(passToken)
-    console.log(!token);
     if (!token) {
       return new Response(
         JSON.stringify({
@@ -109,12 +112,10 @@ export const GET = async (request) => {
     }
 
     const decodedToken = jwt.verify(token, SECRET_KEY);
-    console.log(decodedToken);
 
     // Check if the decoded token matches the expected key
     const isValidKey = decodedToken.keyId === process.env.ADMIN_KEY;
 
-    console.log(isValidKey);
     if (!isValidKey) {
       return new Response(
         JSON.stringify({
@@ -144,15 +145,24 @@ export const GET = async (request) => {
 
       // Further operations with the unique key can go here
     } catch (error) {
-      console.error("Error generating key or contacting database:", error);
       // Handle the error appropriately, such as returning an error response
+      try {
+        const errorData = {
+          errorMessage: "Error in key generation(RNG):",
+          referrerUrl: request.headers.referer,
+          backendServerUrl: request.url,
+          error: error, // Add your error message here
+          requestData: request, // Include the request data here
+        };
+        await writeToLogFile({ errorData });
+      } catch (err) {
+        console.error("Error writing to log file:", err);
+      }
       return new Response(
         JSON.stringify({ success: false, message: "Error Creating key." }),
         { status: 500 }
       );
     }
-
-    console.log(agentKey);
 
     try {
       const expirationDate =
@@ -172,7 +182,6 @@ export const GET = async (request) => {
         retryCountdown = new Date(Date.now() + 10 * 60 * 1000); // Set countdown timer for 10 minutes
       }
       numberOfTries--;
-      console.log("Key successfully saved");
       return new Response(
         JSON.stringify({
           success: true,
@@ -186,7 +195,19 @@ export const GET = async (request) => {
         }
       );
     } catch (error) {
-      console.error("Error contacting database", error);
+      try {
+        const errorData = {
+          errorMessage: "Error contacting database",
+          referrerUrl: request.headers.referer,
+          backendServerUrl: request.url,
+          error: error, // Add your error message here
+          requestData: request, // Include the request data here
+        };
+        await writeToLogFile({ errorData });
+      } catch (err) {
+        console.error("Error writing to log file:", err);
+      }
+
       return new Response(
         JSON.stringify({ success: false, message: "Error Creating Agent" }),
         { status: 500 }
@@ -210,6 +231,19 @@ export const GET = async (request) => {
       );
     } else {
       // Return error response for invalid token
+      try {
+        const errorData = {
+          errorMessage: "Error Generating Key",
+          referrerUrl: request.headers.referer,
+          backendServerUrl: request.url,
+          error: error, // Add your error message here
+          requestData: request, // Include the request data here
+        };
+        await writeToLogFile({ errorData });
+      } catch (err) {
+        console.error("Error writing to log file:", err);
+      }
+
       return new Response(
         JSON.stringify({
           success: false,
@@ -224,6 +258,7 @@ export const GET = async (request) => {
     }
   }
 };
+
 export const DELETE = async (request) => {
   if (request.method !== "DELETE") {
     return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
@@ -244,8 +279,6 @@ export const DELETE = async (request) => {
       }),
       { status: 403 }
     );
-  console.log("Request received");
-  // console.log(request)
   // Extract query parameters from the request
   const authHeader = request.headers.get("Authorization");
   if (!authHeader) {
@@ -261,15 +294,9 @@ export const DELETE = async (request) => {
   }
   // Extract the token from the Authorization header
   const token = authHeader.split(" ")[1];
-  console.log(request);
   const { key } = request.json();
-  console.log(key);
 
   try {
-    // Verify the token
-    // console.log(tokenData);
-    // console.log(passToken)
-    console.log(!token);
     if (!token) {
       return new Response(
         JSON.stringify({
@@ -287,12 +314,10 @@ export const DELETE = async (request) => {
     }
 
     const decodedToken = jwt.verify(token, SECRET_KEY);
-    console.log(decodedToken);
 
     // Check if the decoded token matches the expected key
     const isValidKey = decodedToken.keyId === process.env.ADMIN_KEY;
 
-    console.log(isValidKey);
     if (!isValidKey) {
       return new Response(
         JSON.stringify({
@@ -309,7 +334,6 @@ export const DELETE = async (request) => {
     }
 
     if (!key) {
-      console.log("Key not present");
       return new Response(
         JSON.stringify({
           error: "Key and Mode need to be present",
@@ -318,11 +342,8 @@ export const DELETE = async (request) => {
         { status: 400 }
       );
     }
-    console.log("Key validating...");
     const returnErrorMessage = validateKey(key);
-    console.log("Key validated", returnErrorMessage);
     if (returnErrorMessage !== "pass") {
-      console.log("validation fail!");
       if (numberOfTries <= 1) {
         // If maximum number of tries reached, set the countdown timer
         retryCountdown = new Date(Date.now() + 10 * 60 * 1000); // Set countdown timer for 10 minutes
@@ -336,7 +357,7 @@ export const DELETE = async (request) => {
         { status: 400 }
       );
     }
-    console.log("Key Processed");
+
     // Verification Ends, Key Deletion starts
 
     try {
@@ -364,7 +385,6 @@ export const DELETE = async (request) => {
         retryCountdown = new Date(Date.now() + 10 * 60 * 1000); // Set countdown timer for 10 minutes
       }
       numberOfTries--;
-      console.log("Key successfully deleted");
       return new Response(
         JSON.stringify({
           success: true,
@@ -377,7 +397,18 @@ export const DELETE = async (request) => {
         }
       );
     } catch (error) {
-      console.error("Error contacting database", error);
+      try {
+        const errorData = {
+          errorMessage: "Error contacting database",
+          referrerUrl: request.headers.referer,
+          backendServerUrl: request.url,
+          error: error, // Add your error message here
+          requestData: request, // Include the request data here
+        };
+        await writeToLogFile({ errorData });
+      } catch (err) {
+        console.error("Error writing to log file:", err);
+      }
       return new Response(
         JSON.stringify({ success: false, message: "Error deleting Agent Key" }),
         { status: 500 }
@@ -401,6 +432,18 @@ export const DELETE = async (request) => {
       );
     } else {
       // Return error response for invalid token
+      try {
+        const errorData = {
+          errorMessage: "Error Deleting Key",
+          referrerUrl: request.headers.referer,
+          backendServerUrl: request.url,
+          error: error, // Add your error message here
+          requestData: request, // Include the request data here
+        };
+        await writeToLogFile({ errorData });
+      } catch (err) {
+        console.error("Error writing to log file:", err);
+      }
       return new Response(
         JSON.stringify({
           success: false,

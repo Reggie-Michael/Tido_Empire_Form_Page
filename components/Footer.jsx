@@ -15,10 +15,10 @@ const Footer = ({ modalOpen }) => {
     <footer className="w-full shadow-inner min-h-[300px] h-[40dvh] mt-9 mb-3 grid grid-cols-1 md:grid-cols-11 gap-14 md:gap-5 px-[5%] md:px-[2.5%] py-[3%]">
       <div className="flex flex-col gap-9 justify-between md:col-span-5 ">
         <div className="flex flex-col gap-5 md:gap-8">
-          <h2 className="text-3xl md:text-5xl font-semibold font-inter">
+          <h2 className="text-2xl lg:text-4xl font-semibold font-inter">
             Tido Empire
           </h2>
-          <p className="font-medium text-lg md:w-3/5">
+          <p className="font-medium text-base lg:text-lg md:w-3/5">
             Get a spot in our market by buying an application form Now!
           </p>
         </div>
@@ -35,37 +35,45 @@ const Footer = ({ modalOpen }) => {
           />
           <span className="send-span"></span>
         </Button>
+        <Link
+          href={"/terms"}
+          title="Terms and Conditions"
+          aria-label="Tido Empire Terms and Condition"
+          className="text-blue-600 underline -mt-3 underline-offset-2 font-medium text-sm hover:opacity-75"
+        >
+          Read Our Terms and Conditions
+        </Link>
       </div>
       <div className="flex flex-col gap-5 md:col-span-3">
-        <h2 className="text-xl md:text-3xl font-semibold font-inter uppercase">
+        <h2 className="text-xl lg:text-3xl font-semibold font-inter uppercase">
           Follow Us
         </h2>
-        <div className="grid grid-cols-3 gap-4 w-2/5 md:w-4/5">
+        <div className="grid grid-cols-3 gap-4 md:gap-1 w-2/5 md:w-3/5">
           <Link
-            title="Instagram"
-            href={""}
+            title="Tido Empire Instagram Page"
+            href={"https://www.instagram.com/tidobuilds?igsh=MWZqMmJjbGZpbXV3Zg%3D%3D&utm_source=qr"}
             className="border rounded-full size-9 flex items-center justify-center border-black text-lg hover:bg-black/90 hover:text-white hover:size-10 "
           >
             <FontAwesomeIcon icon={faInstagram} />
           </Link>
           <Link
-            title="facebook"
-            href={""}
+            title="Tido Empire Facebook Page"
+            href={"https://www.facebook.com/profile.php?id=61556794744332&mibextid=LQQJ4d"}
             className="border rounded-full size-9 flex items-center justify-center border-black text-lg hover:bg-black/90 hover:text-white hover:size-10 "
           >
             <FontAwesomeIcon icon={faFacebook} />
           </Link>
-          <Link
+          {/* <Link
             title="twitter/x"
             href={""}
             className="border rounded-full size-9 flex items-center justify-center border-black text-lg hover:bg-black/90 hover:text-white hover:size-10 "
           >
             <FontAwesomeIcon icon={faTwitter} />
-          </Link>
+          </Link> */}
         </div>
       </div>
       <div className="flex flex-col gap-5 md:col-span-3">
-        <h2 className="text-xl md:text-3xl font-semibold font-inter uppercase">
+        <h2 className="text-xl lg:text-3xl font-semibold font-inter uppercase">
           Call Us
         </h2>
         <p className="text-base md:text-lg font-semibold">80 2145 7896</p>

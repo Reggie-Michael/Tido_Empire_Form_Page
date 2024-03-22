@@ -65,7 +65,6 @@ const KeyDelete = () => {
           warn("An Unexpected Error Occurred, Please Try again Later.");
           setTimeout(() => router.push(`/admin`), 500);
         }
-     //    console.error("Error:", error);
       };
 
       const response = await fetch(url, {
@@ -81,7 +80,6 @@ const KeyDelete = () => {
       if (response.ok) {
         if (data.success) {
           // Token is valid, perform additional actions
-          console.log("Token is valid");
           setPassToken(data.token);
         }
       } else {
@@ -89,7 +87,6 @@ const KeyDelete = () => {
         handleError(response.status, data);
       }
     } catch (error) {
-      console.error("An error occurred", error);
     } finally {
       setResponseGotten(true);
     }
@@ -147,10 +144,6 @@ const KeyDelete = () => {
         return "Please try again later";
     }
   };
-  //   const token = searchParams.get("token");
-
-  // This will not be logged on the server when using static rendering
-  // console.log(search)
   const validateKey = useCallback(() => {
     //     let allInputsValid = true;
     const inputLength = key?.length;
@@ -180,15 +173,12 @@ const KeyDelete = () => {
       startCountdown();
       return;
     }
-    console.log(validateKey());
     if (!validateKey()) {
       return;
     }
     try {
       const url = `/api/generate_key/${key}`;
       setSubmitting(true);
-      // console.log(new URLSearchParams(dataToSend));
-      // console.log(dataToSend.token);
       const response = await fetch(url, {
         method: "DELETE",
         headers: {
@@ -198,24 +188,12 @@ const KeyDelete = () => {
       });
 
       const data = response.status !== 500 && (await response.json());
-      console.log(response);
       if (response.ok) {
-        //   // console.log(data)
-        //   if (data.success) {
-        //     // Token is valid, perform additional actions
-        //     console.log("Token is valid");
-        //     // console.log(data);
-        //     setPassToken(data.token);
-        //     console.log(passToken);
-        //     // Redirect or handle as needed
-        //   }
-
         notify("Sales Agent Key successfully deleted!");
         setRemainingTries((tries) => tries - 1);
         if (remainingTries === 0) {
           startCountdown();
         }
-        console.log(response.statusText);
       } else {
         // Handle other HTTP errors
         if (response.status == 400) {
@@ -251,16 +229,13 @@ const KeyDelete = () => {
         } else if (response.status == 500) {
           warn("An Unexpected Error Occurred, Please Try again Later.");
         }
-        console.error("Error:", response.statusText);
       }
     } catch (error) {
       warn("An unexpected Error occurred! Please Try again Later.");
       //  setTimeout(() => {
       //    generateKey(); // Retry after a delay
       //  }, 1000);
-      console.error("An error occurred", error);
     } finally {
-      console.log("Key generated");
       setSubmitting(false);
       setKey("");
     }
@@ -270,7 +245,6 @@ const KeyDelete = () => {
     const value = e.target.value;
     setKey(value);
     if (key.length >= 6) setReadyForVerification(true);
-    console.log(readyForVerification);
   };
 
   useEffect(() => {
@@ -303,15 +277,12 @@ const KeyDelete = () => {
   useEffect(() => {
     if (dataFetchedRef.current) return;
     try {
-      console.log("active");
       verifyAccess();
       dataFetchedRef.current = true;
     } catch (error) {
-      console.error("Error Verifying access", error);
       warn("An unexpected error occurred! Refreshing...");
       setTimeout(() => router.push("/admin/generate"), 1000);
     } finally {
-      console.log(" Access Verified...");
       setTimeout(() => setIsLoading(false), 3000);
     }
   }, [verifyAccess, router]);
@@ -321,21 +292,6 @@ const KeyDelete = () => {
       startCountdown();
     }
   }, [remainingTries]);
-
-  //   useEffect(() => {
-  //     setTimeout(() => setIsLoading(false), 1000);
-  //   }, []);
-
-  // useEffect(() => {
-
-  //   // router.push("/agent");
-  // }, [, router]);
-
-  useEffect(() => {
-    // This block of code will run every time passToken changes
-    console.log("passToken updated:", passToken);
-    // Perform any actions that depend on the updated passToken value here
-  }, [passToken]);
 
   useEffect(() => {
     if (remainingTries === 0) {
@@ -470,6 +426,14 @@ const KeyDelete = () => {
               </div>
             </div>
           )}
+          <div className="flex text-green-600 font-medium px-4 text-base md:text-xl mt-10 hover:underline self-end">
+            <Link
+              href={"/admin/generate"}
+              disabled={submitting || !responseGotten}
+            >
+              Generate Key
+            </Link>
+          </div>
         </div>
       )}
     </div>

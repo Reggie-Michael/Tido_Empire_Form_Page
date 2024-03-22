@@ -89,9 +89,7 @@ const AccessValidate = () => {
     //       return;
     //     }
     setSubmitting(true);
-    console.log("clicked", key);
     try {
-      //  console.log(validateKey());
       if (!validateKey()) return;
       const response = await fetch("/api/auth/agent_key", {
         method: "POST",
@@ -99,16 +97,12 @@ const AccessValidate = () => {
         body: JSON.stringify({ key }),
       });
 
-      console.log(response);
-
       // setKey("")
       const data = await response.json();
-      console.log(data);
 
       if (response.ok) {
         // Key is valid, redirect to login page with token
         if (data.success) {
-        
           notify("Key is Valid. You will be redirected soon.");
           setTimeout(() => router.push(`/agent/login?OiD=${data.key}`), 500);
         }
@@ -126,7 +120,6 @@ const AccessValidate = () => {
         } else {
           warn("An Error Occurred, Please Try again Later.");
         }
-        console.error(data.error);
         //    else if (response.status === 403) {
         //      warn("Key Validation Error");
         //      setError({ errorState: true, type: data.errorType });
@@ -135,7 +128,17 @@ const AccessValidate = () => {
       }
     } catch (error) {
       warn("An Error Occurred, Please Try again Later.");
-      console.error("An error occurred", error);
+      try {
+        const errorData = {
+          errorMessage: error.message.toString(),
+          referrerUrl: window.location,
+          error: error, // Add your error message here
+        };
+        await writeToLogFile({ errorData });
+        console.log("Log file created successfully.");
+      } catch (err) {
+        console.error("Error writing to log file:", err);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -145,7 +148,6 @@ const AccessValidate = () => {
     const value = e.target.value;
     setKey(value);
     if (key.length < 2) setReadyForVerification(true);
-    console.log(readyForVerification);
   };
 
   const validateKey = useCallback(() => {
@@ -201,7 +203,7 @@ const AccessValidate = () => {
         <Loading />
       ) : (
         <div className="flex flex-col pb-3 h-dvh min-h-[400px] w-full items-center justify-between">
-          <Navbar className="text-black" />
+          <Navbar className="text-black" formLinkDisabled={true} />
           <div className="flex flex-col w-full items-center">
             <div className="flex flex-col items-center text-center gap-5 mt-13 md:mt-20 mb-10">
               <h4 className="text-xl md:text-2xl leading-3 font-medium">

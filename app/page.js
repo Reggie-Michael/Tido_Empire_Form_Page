@@ -36,8 +36,49 @@ export default function Home() {
   const router = useRouter();
   const referrerId = searchParams.get("r");
   const referenceNo = searchParams.get("reference");
-  console.log("referenceNo:", referenceNo);
-  console.log("refId:", referrerId);
+  const [showButton, setShowButton] = useState(false);
+
+  const scrollTopReady = () => {
+    if (typeof window !== "undefined" && document.documentElement) {
+      const deviceHeight = window.innerHeight;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      return scrollHeight > deviceHeight && scrollTop > 0;
+    }
+    return false;
+  };
+
+  // Function to scroll back to the top smoothly
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowButton(scrollTopReady());
+    };
+
+    // Attach scroll event listener when component mounts
+    window.addEventListener("scroll", handleScroll);
+
+    // Remove scroll event listener when component unmounts
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []); // Empty dependency array ensures effect runs only once on mount
+
+  useEffect(() => {
+    // Simulate fetching data
+    setTimeout(() => {
+      // Once data is loaded, update loading state
+      setIsLoading(false);
+    }, 2000); // Simulated delay of 2 seconds
+  }, []);
+
+ 
 
   const notify = (val) =>
     toast.success(
@@ -76,7 +117,6 @@ export default function Home() {
 
   const handlePaymentProcess = useCallback(async () => {
     try {
-      console.log("Ready to handle payment");
       const shopLocArray = [
         "warehouse",
         "first floor",
@@ -94,16 +134,8 @@ export default function Home() {
         return newValue;
       };
       const shopLocation = shopLocFunction();
-      console.log("refId is:", refId);
-      console.log("shopLocation is:", shopLocation);
-      console.log("handling Payment...");
-      // const response = await fetch(
-      //   `/api/paystack/webhook?reference=${referenceNo}&refererId=${refId}`,
-      //   {
-      //     method: "GET",
-      //     headers: { "Content-Type": "application/json" },
-      //   }
-      // );
+      
+   
       const response = await fetch(`/api/paystack/webhook`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -114,23 +146,18 @@ export default function Home() {
         }),
       });
 
-      console.log(response);
-      console.log("Responding...");
 
       if (response.ok) {
         // const data = await response.json(); // Parse response JSON
-        console.log("returning true");
         return true;
       } else {
         const data = await response.json(); // Parse error response JSON
         if (response.status === 400) {
-          console.log("returning false for bad request");
           warn(
             "Invalid Reference Number. Check your email for receipt and contact Tido Empire"
           );
         }
         if (response.status === 401) {
-          console.log("returning false for invalid request");
           warn(
             "Seems there was an error in payment. Check your email for receipt and contact Tido Empire"
           );
@@ -138,7 +165,6 @@ export default function Home() {
         return false;
       }
     } catch (error) {
-      console.error("An error occurred", error);
       return false;
     }
   }, [referenceNo]);
@@ -167,15 +193,7 @@ export default function Home() {
   const hideLetter = () => setLetterVisible(false);
   const showModal = () => setFormPurchase(true);
   const hideModal = () => setFormPurchase(false);
-  const currentYear = new Date().getFullYear();
 
-  // Function to scroll back to the top smoothly
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  };
 
   // Effect to manage overflow based on modal state
   useEffect(() => {
@@ -205,11 +223,9 @@ export default function Home() {
     if (!isLoading) return;
     if (dataFetchedRef.current) return;
     const processPayment = async () => {
-      console.log("Processing Payment...");
       try {
         setPaymentProcessing(true);
         const paymentStatus = await handlePaymentProcess();
-        console.log("paymentStatus:", paymentStatus);
         if (paymentStatus) {
           notify("Payment Successfully Made! Thank You for buying our form.");
         } else {
@@ -217,11 +233,8 @@ export default function Home() {
             "There was an error in payment processing. Please try again or contact Tido Empire with receipt."
           );
         }
-        console.log(" Payment Processed...");
       } catch (error) {
-        console.error("Error Processing Payment", error);
       } finally {
-        console.log(" Payment Processed2...");
         setPaymentProcessing(false);
       }
     };
@@ -231,7 +244,6 @@ export default function Home() {
   }, [referenceNo, handlePaymentProcess, isLoading]);
 
   useEffect(() => {
-    console.log(referrerId);
     const saveReferrer = () => {
       if (referrerId !== null || referrerId !== "undefined") {
         sessionStorage.setItem("referrerId", referrerId);
@@ -317,7 +329,6 @@ export default function Home() {
 
   useEffect(() => {
     // Simulate fetching data
-    console.log("mounted");
     setTimeout(() => {
       // Once data is loaded, update loading state
       setIsLoading(false);
@@ -643,14 +654,17 @@ export default function Home() {
           </Suspense>
 
           {/* Back to Top  */}
-          <button
-            type="button"
-            className="fixed bottom-5 right-2 md:right-5 size-11 p-3  md:p-7 cursor-pointer text-white rounded-full bg-blue-600/70 opacity-70 hover:opacity-100 hover:bg-blue-600/90 backdrop-blur flex items-center justify-center text-base md:text-2xl"
-            onClick={scrollToTop}
-            title="Back to top"
-          >
-            <FontAwesomeIcon icon={faArrowUp} />
-          </button>
+          {showButton && (
+            <button
+              type="button"
+              className="fixed bottom-5 showUp_animate2 right-2 md:right-5 size-11 p-3  md:p-7 cursor-pointer text-white rounded-full bg-blue-600/70 opacity-70 hover:opacity-100 hover:bg-blue-600/90 backdrop-blur flex items-center justify-center text-base md:text-2xl"
+              onClick={scrollToTop}
+              title="Back to top"
+              aria-label="Back to top"
+            >
+              <FontAwesomeIcon icon={faArrowUp} />
+            </button>
+          )}
           <div className="my-52 w-full text-base flex flex-col items-center text-center font-semibold md:text-lg text-white bg-blue-600 py-4 rounded-md">
             <p>Want to become our Sales Agent? Contact Us Now</p>
 
