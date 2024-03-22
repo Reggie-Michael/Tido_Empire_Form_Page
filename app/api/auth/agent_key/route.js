@@ -245,7 +245,7 @@ export const POST = async (request) => {
         { status: 400 }
       );
     }
-    const returnErrorMessage = validateKey(key);
+    const returnErrorMessage = await validateKey(key);
     if (returnErrorMessage !== "pass") {
       //     if (numberOfTr ies <= 1) {
       //       // If maximum number of tries reached, set the countdown timer

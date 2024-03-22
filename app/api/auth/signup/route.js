@@ -381,7 +381,7 @@ const validateCode = async (verificationCode) => {
         backendServerUrl: "api/auth/signup",
         error: error, // Add your error message here
       };
-      await writeToLogFile({ errorData });
+       await writeToLogFile({ errorData });
     } catch (err) {
       console.error("Error writing to log file:", err);
     }
@@ -573,7 +573,7 @@ export const GET = async (request) => {
         error: error, // Add your error message here
         requestData: request, // Include the request data here
       };
-      writeToLogFile({ errorData });
+      await writeToLogFile({ errorData });
     } catch (err) {
       console.error("Error writing to log file:", err);
     }
@@ -1198,7 +1198,7 @@ export const POST = async (request) => {
         );
       }
       const savedVerificationCode = verificationData.code;
-      const codeValidation = validateCode(userVerificationCode);
+      const codeValidation = await validateCode(userVerificationCode);
       if (!codeValidation.codeValid) {
         if (numberOfTries <= 1) {
           // If maximum number of tries reached, set the countdown timer

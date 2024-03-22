@@ -136,16 +136,7 @@ export default function KeySubmission() {
       }
     } catch (error) {
       warn("An Error Occurred, Please Try again Later.");
-      try {
-        const errorData = {
-          errorMessage: response.status + " " + response.statusText,
-          referrerUrl: window.location,
-          error: error , // Add your error message here
-        };
-        await writeToLogFile({ errorData });
-      } catch (err) {
-        console.error("Error writing to log file:", err);
-      }
+     
     } finally {
       setSubmitting(false);
     }

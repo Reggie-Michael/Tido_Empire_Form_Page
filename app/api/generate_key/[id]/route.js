@@ -120,7 +120,7 @@ export const DELETE = async (request, { params }) => {
         { status: 400 }
       );
     }
-    const returnErrorMessage = validateKey(key);
+    const returnErrorMessage = await validateKey(key);
     if (returnErrorMessage !== "pass") {
       if (numberOfTries <= 1) {
         // If maximum number of tries reached, set the countdown timer
