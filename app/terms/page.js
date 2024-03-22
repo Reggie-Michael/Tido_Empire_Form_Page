@@ -180,11 +180,11 @@ export default function TermsAndCondition() {
                     </h4>
                     <p>
                       Shop allocations require full payment confirmed by UBA
-                      into TIDO EMPIRE's account, subject to availability.
+                      into TIDO EMPIRE&apos;s account, subject to availability.
                     </p>
                     <p>Form fee is non-refundable.</p>
                     <p>
-                      If a preferred shop type/level isn't available, applicants
+                      If a preferred shop type/level isn&apos;t available, applicants
                       must accept an alternative within zoning restrictions
                       after making full payment.
                     </p>
@@ -194,7 +194,7 @@ export default function TermsAndCondition() {
                     </p>
                     <p>
                       Shops will be allocated based on full payments made to
-                      TIDO EMPIRE INTL's UBA account (#1023505693).
+                      TIDO EMPIRE INTL&apos;s UBA account (#1023505693).
                     </p>
                   </div>
                   <div className="flex flex-col gap-3">
@@ -209,7 +209,7 @@ export default function TermsAndCondition() {
                         accepted.
                       </li>
                       <li>
-                        Payments to be made to TIDO EMPIRE INTL's UBA account
+                        Payments to be made to TIDO EMPIRE INTL&apos;s UBA account
                         (#2041610327).
                       </li>
                       <li>
@@ -219,7 +219,7 @@ export default function TermsAndCondition() {
                       <li>Preference given to fully paid applications.</li>
                       <li>
                         Purchase queries should be addressed to TIDO EMPIRE
-                        INTL's accredited agent ( Everview Properties Limited).
+                        INTL&apos;s accredited agent ( Everview Properties Limited).
                       </li>
                     </ul>
                   </div>

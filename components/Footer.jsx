@@ -51,14 +51,18 @@ const Footer = ({ modalOpen }) => {
         <div className="grid grid-cols-3 gap-4 md:gap-1 w-2/5 md:w-3/5">
           <Link
             title="Tido Empire Instagram Page"
-            href={"https://www.instagram.com/tidobuilds?igsh=MWZqMmJjbGZpbXV3Zg%3D%3D&utm_source=qr"}
+            href={
+              "https://www.instagram.com/tidobuilds?igsh=MWZqMmJjbGZpbXV3Zg%3D%3D&utm_source=qr"
+            }
             className="border rounded-full size-9 flex items-center justify-center border-black text-lg hover:bg-black/90 hover:text-white hover:size-10 "
           >
             <FontAwesomeIcon icon={faInstagram} />
           </Link>
           <Link
             title="Tido Empire Facebook Page"
-            href={"https://www.facebook.com/profile.php?id=61556794744332&mibextid=LQQJ4d"}
+            href={
+              "https://www.facebook.com/profile.php?id=61556794744332&mibextid=LQQJ4d"
+            }
             className="border rounded-full size-9 flex items-center justify-center border-black text-lg hover:bg-black/90 hover:text-white hover:size-10 "
           >
             <FontAwesomeIcon icon={faFacebook} />
@@ -74,9 +78,17 @@ const Footer = ({ modalOpen }) => {
       </div>
       <div className="flex flex-col gap-5 md:col-span-3">
         <h2 className="text-xl lg:text-3xl font-semibold font-inter uppercase">
-          Call Us
+          Contact Us
         </h2>
-        <p className="text-base md:text-lg font-semibold">80 2145 7896</p>
+        <Link href="tel:+234 906 5091 885" className="text-base md:text-lg font-semibold hover:underline underline-offset-2 hover:opacity-85">+234 906 5091 885</Link>
+        <Link href="tel:+234 815 9659 558" className="text-base md:text-lg font-semibold hover:underline underline-offset-2 hover:opacity-85">+234 815 9659 558</Link>
+        <Link
+          href={"mailto:support@tidobuilds.com"}
+          className="text-base md:text-lg font-semibold hover:underline underline-offset-2 hover:opacity-85"
+        >
+          support@tidobuilds.com
+        </Link>
+        <a href="tel:+"></a>
       </div>
       <div className="my-9 md:col-span-11 row-span-1 text-sm flex flex-col items-center text-center font-semibold md:text-base">
         Made with ❤️ by Afripul Group &copy; {currentYear}

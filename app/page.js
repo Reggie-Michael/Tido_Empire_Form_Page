@@ -208,7 +208,7 @@ export default function Home() {
     return () => {
       document.body.classList.remove("overflow-hidden");
     };
-  }, [letterVisible]);
+  }, [letterVisible, formPurchase]);
 
   // further implement \\
 
