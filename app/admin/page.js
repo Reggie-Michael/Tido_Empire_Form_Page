@@ -131,16 +131,7 @@ export default function KeySubmission() {
           warn("Method Not allowed");
         } else {
           warn("An Error Occurred, Please Try again Later.");
-          try {
-            const errorData = {
-              errorMessage: response.status + " " + response.statusText,
-              referrerUrl: window.location,
-              error: data?.error, // Add your error message here
-            };
-            await writeToLogFile({ errorData });
-          } catch (err) {
-            console.error("Error writing to log file:", err);
-          }
+         
         }
       }
     } catch (error) {

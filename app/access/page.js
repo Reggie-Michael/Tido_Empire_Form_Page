@@ -128,17 +128,7 @@ const AccessValidate = () => {
       }
     } catch (error) {
       warn("An Error Occurred, Please Try again Later.");
-      try {
-        const errorData = {
-          errorMessage: error.message.toString(),
-          referrerUrl: window.location,
-          error: error, // Add your error message here
-        };
-        await writeToLogFile({ errorData });
-        console.log("Log file created successfully.");
-      } catch (err) {
-        console.error("Error writing to log file:", err);
-      }
+      
     } finally {
       setSubmitting(false);
     }
