@@ -20,17 +20,15 @@ const getTransactionData = async (referenceNo) => {
         },
       }
     );
-console.log(response)
     // Check if the request was successful
     if (response.ok) {
       // Parse the response JSON
       const data = await response.json();
       // Return the transaction data
-      console.log(data)
       return data?.data;
     } else {
       // Handle error response
-  
+
       try {
         const errorData = {
           errorMessage: response.status + " " + response.statusText,
@@ -48,7 +46,6 @@ console.log(response)
       }
     }
   } catch (error) {
-   
     try {
       const errorData = {
         errorMessage: "An error occurred while retrieving transaction data:",
@@ -66,9 +63,14 @@ console.log(response)
 
 const getReferrerData = async (agentId) => {
   try {
+    if (!agentId || agentId == "null" || agentId == "undefined") return "admin";
     await connectToDB();
-
-    return "admin";
+    const agentExist = await Agent.findById(agentId);
+    if (agentExist !== null && agentExist !== undefined) {
+      return agentId;
+    } else {
+      return "admin";
+    }
   } catch (error) {
     try {
       const errorData = {
@@ -87,11 +89,12 @@ const saveCustomerData = async (agentId, customerData, shopLocation) => {
   try {
     const referrerId = agentId !== "admin" ? agentId : "";
     await connectToDB();
+    console.log(customerData?.customer?.last_name?.trim(), typeof customerData?.customer?.last_name)
     if (agentId !== "admin") {
       const newCustomer = new Customer({
         referrer: referrerId,
-        firstName: customerData?.customer?.first_name,
-        lastName: customerData?.customer?.last_name,
+        firstName: customerData?.customer?.first_name?.trim(),
+        lastName: customerData?.customer?.last_name?.trim(),
         phoneNumber: customerData?.customer?.phone,
         email: customerData?.customer?.email,
         shopLocation: shopLocation || null,
@@ -116,6 +119,7 @@ const saveCustomerData = async (agentId, customerData, shopLocation) => {
       return customerId;
     }
   } catch (error) {
+    console.log(error);
     try {
       const errorData = {
         errorMessage: "Error saving customer data",
@@ -165,7 +169,6 @@ export const POST = async (req) => {
     const shopLocation = shopLoc
       ? shopLoc.toString().replace(/[^a-zA-Z]/g, "")
       : null;
-
 
     // Perform necessary validation on the reference parameter
     if (!referenceNo) {
