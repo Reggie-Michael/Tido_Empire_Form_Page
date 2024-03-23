@@ -20,12 +20,13 @@ const getTransactionData = async (referenceNo) => {
         },
       }
     );
-
+console.log(response)
     // Check if the request was successful
     if (response.ok) {
       // Parse the response JSON
       const data = await response.json();
       // Return the transaction data
+      console.log(data)
       return data?.data;
     } else {
       // Handle error response

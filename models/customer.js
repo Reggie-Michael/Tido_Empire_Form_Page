@@ -12,7 +12,7 @@ const CustomerSchema = new Schema({
   },
   lastName: {
     type: String,
-    required: [true, "Last Name is required!"],
+    // required: [true, "Last Name is required!"],
     match: [
       /^(?=.{2,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z]+(?<![_.])$/,
       "Last Name invalid, it should contain 2-20 letters!",
