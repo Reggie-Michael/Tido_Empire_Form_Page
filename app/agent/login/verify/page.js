@@ -97,7 +97,6 @@ const ValidationPage = () => {
         const data = await response.json();
         notify("Complete Registration! Thank you.");
         router.push(`/agent?s=${data.success}&r=${data.ref}&k=${data.key}`);
-       
       } else {
         const data = await response.json();
         if (response.status === 400) {
@@ -347,7 +346,7 @@ const ValidationPage = () => {
               type="button"
               className={`bg-transparent text-base md:text-lg hover:underline disabled:opacity-50 text-blue-600 disabled:cursor-not-allowed flex items-center justify-center shadow-none`}
               onClick={handleResend}
-              disabled={submitting || remainingTries === 0}
+              disabled={submitting || remainingTries === 0 || !responseGotten}
               loading={submitting}
             >
               Resend Code

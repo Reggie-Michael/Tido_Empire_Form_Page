@@ -309,7 +309,6 @@ export default function Login() {
   };
 
   const setErrorStatus = (val) => {
-    
     if (typeof val == "string") {
       setError((prev) => ({
         ...prev, // Spread the previous state
@@ -376,7 +375,6 @@ export default function Login() {
         // Check file size (max 5MB)
         const maxSize = 5 * 1024 * 1024; // 5MB
         if (image.size > maxSize) {
-        
           const message = { error: "minMaxInvalid", type: "imageTooLarge" };
           return message;
         }
@@ -614,9 +612,7 @@ export default function Login() {
 
     // Validate based on agency type
 
-
     if (readyForVerification.companyName || readyForVerification.fName) {
-     
       const checkVal =
         agency === "company" ? inputValues.companyName : inputValues.fName;
       const validateMessage = validateMainName(checkVal);
@@ -627,8 +623,6 @@ export default function Login() {
     }
 
     if (agency !== "company" && readyForVerification.lName) {
-    
-
       const validateMessage = validateOtherName(inputValues.lName);
       if (validateMessage !== "passLNameCheck") {
         setErrorStatus(validateMessage);
@@ -648,7 +642,6 @@ export default function Login() {
     // Validate phone number and CAC number
     if (agency === "company") {
       if (readyForVerification.pNumber && readyForVerification.cacNo) {
-    
         const numbersValidationMessage = validateNumbers(
           inputValues.pNumber,
           inputValues.cacNo,
@@ -660,10 +653,7 @@ export default function Login() {
         }
       }
     } else {
-
       if (readyForVerification.pNumber) {
-       
-
         const numbersValidationMessage = validateNumbers(
           inputValues.pNumber,
           inputValues.cacNo,
@@ -748,10 +738,8 @@ export default function Login() {
 
         const data = response.status !== 500 && (await response.json());
 
-    
         // Handle the response from the backend
         if (response.ok) {
-        
           if (data.success && data.status == "verified") {
             notify(
               "Sales Agent Account already Created. Redirecting to Sales Tab"
@@ -799,7 +787,9 @@ export default function Login() {
         }
       } catch (error) {
         // Handle network errors
-        warn("An error occurred, Please contact Tido Empire and try again later.");
+        warn(
+          "An error occurred, Please contact Tido Empire and try again later."
+        );
       }
     } catch (error) {
       warn("Sorry, please contact Tido Empire and try again later.");
@@ -895,7 +885,6 @@ export default function Login() {
       address: false,
     });
     setImagePreview(null);
-
   };
 
   useEffect(() => {
@@ -972,7 +961,10 @@ export default function Login() {
             </h1>
             {/* <span className="text-2xl leading-3 font-medium">Tab</span> */}
           </div>
-          <form className="flex flex-col gap-10 w-2/3 " onSubmit={handleSubmit}>
+          <form
+            className="flex flex-col gap-10 w-2/3 mb-16"
+            onSubmit={handleSubmit}
+          >
             <div className="text-center text-base md:text-lg lg:text-xl font-medium">
               {agency === "company" || agency === "individual" ? (
                 <h3 className="capitalize">
@@ -985,7 +977,11 @@ export default function Login() {
                 <p>Please select a valid Agency</p>
               )}
             </div>
-            <div className="flex flex-col sm:flex-row w-full h-24 sm:h-16 gap-7 justify-between">
+            <div
+              className={`flex flex-col sm:flex-row w-full ${
+                agency == "company" ? "h-11" : "h-24"
+              } sm:h-16 gap-7 justify-between`}
+            >
               {agency == "company" ? (
                 <Input
                   // label="Company Name"
@@ -1133,23 +1129,39 @@ export default function Login() {
                 </>
               ) : (
                 <>
-                  <Input
-                    // label="First Name"
-                    type="file"
-                    required
-                    accept="image/jpg, image/png, image/jpeg"
-                    placeholder="Profile Image"
-                    max={1}
-                    // value={!inputValues.image && ''}
-                    onChange={handleFileChange}
-                    disabled={submitting}
-                    className="bg-blue-400/70 h-full opacity-80 border-[1px] border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
+                  <div className="flex-col w-full gap-3 h-fit flex">
+                    <label
+                      htmlFor="imageUpload"
+                      className="text-sm md:text-base text-gray-800 font-medium"
+                    >
+                      Profile Image:
+                    </label>
+                    <Input
+                      // label="Upload Profile Image"
+                      type="file"
+                      required
+                      accept="image/jpg, image/png, image/jpeg"
+                      placeholder="Profile Image"
+                      max={1}
+                      id="imageUpload"
+                      // value={!inputValues.image && ''}
+                      onChange={handleFileChange}
+                      disabled={submitting}
+                      className="bg-blue-400/70 h-full opacity-80 border-[1px] border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
                 </>
               )}
             </div>
             {agency == "company" && (
-              <div className="flex flex-col sm:flex-row w-full h-24 sm:h-16 gap-7 justify-between">
+              <div className="flex flex-col w-full h-fit gap-3 justify-between -mt-3">
+                <label
+                  htmlFor="imageUpload"
+                  className="text-sm md:text-base text-gray-800 font-medium h-fit"
+                >
+                  Company Logo:
+                </label>
+
                 <Input
                   // label="First Name"
                   type="file"
@@ -1160,7 +1172,7 @@ export default function Login() {
                   // value={inputValues.image}
                   onChange={handleFileChange}
                   disabled={submitting}
-                  className="bg-blue-400/70 h-full opacity-80 border-[1px] border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-blue-400/70 flex-1 h-full opacity-80 border-[1px] border-black border-opacity-60 rounded-md text-gray-800 hover:opacity-60 focus:text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
             )}

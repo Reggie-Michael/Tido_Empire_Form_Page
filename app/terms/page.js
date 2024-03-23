@@ -12,11 +12,12 @@ import { faArrowUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ShopLocation from "@/components/ShopLocation";
 
 export default function TermsAndCondition() {
   const [isLoading, setIsLoading] = useState(true);
   const [downloadPdf, setDownloadPdf] = useState(false);
-  // const [formPurchase, setFormPurchase] = useState(false);
+  const [formPurchase, setFormPurchase] = useState(false);
   const [showButton, setShowButton] = useState(false);
 
   const scrollTopReady = () => {
@@ -131,8 +132,8 @@ export default function TermsAndCondition() {
             <div className="w-full h-full flex flex-col gap-4 md:gap-10 mt-2">
               <Navbar
                 modalOpen={showModal}
-                className="text-black"
-                formLinkDisabled={true}
+                className="text-black terms"
+                // formLinkDisabled={true}
               />
               <div className="flex items-center justify-end mt-20 mb-10">
                 <div className="flex items-center gap-4">
@@ -252,7 +253,7 @@ export default function TermsAndCondition() {
               <FontAwesomeIcon icon={faArrowUp} />
             </button>
           )}
-          {/* {formPurchase && <ShopLocation hideModal={hideModal} />} */}
+          {formPurchase && <ShopLocation hideModal={hideModal} />}
           <Footer modalOpen={showModal} />
         </main>
       )}

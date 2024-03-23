@@ -1,5 +1,7 @@
 import { google } from "googleapis";
 import fs from "fs";
+import stream from "stream";
+import mime from "mime"; // Import the 'mime' library for MIME type detection
 
 // Load service account credentials from environment variables
 // Create an OAuth2 client with the service account credentials
@@ -25,27 +27,52 @@ const auth = new google.auth.GoogleAuth({
 const drive = google.drive({ version: "v3", auth });
 
 // Function to upload a file to Google Drive
-export async function uploadFile(filePath, fileName, folderId) {
+export async function uploadFile(
+  fileData,
+  fileName,
+  folderId,
+  actualFile = false,
+  image = false
+) {
   try {
+    // Validate input parameters
+    if (!fileData || !fileName || !folderId) {
+      throw new Error(
+        "Invalid input parameters. Please provide file data, file name, and folder ID."
+      );
+    }
+
     // Read the file content
-    const fileContent = fs.createReadStream(filePath);
+    const tempFileContent = actualFile
+      ? fileData
+      : fs.createReadStream(fileData);
+    const fileContent = image
+      ? new stream.PassThrough().end(tempFileContent)
+      : tempFileContent;
+    // Detect MIME type based on file extension (assuming fileData is a path)
+    let mimeType = "application/octet-stream";
+    if (!actualFile) {
+      mimeType = mime.getType(fileData); // Use 'mime' library
+    }
 
     // Upload file to Drive
     const response = await drive.files.create({
       resource: {
         name: fileName,
         parents: [folderId], // Specify the parent folder ID
-        mimeType: "application/octet-stream",
+        mimeType: mimeType,
       },
       media: {
-        mimeType: "application/octet-stream",
+        mimeType: mimeType,
         body: fileContent,
-        fields: 'id'
+        fields: "id",
       },
     });
 
-    console.log("File uploaded:", response.data);
+    // console.log("File uploaded:", response.data);
+    // return response.data.id; // Return the uploaded file ID
   } catch (error) {
     console.error("Error uploading file:", error);
+    // return null; // Return null on error
   }
 }

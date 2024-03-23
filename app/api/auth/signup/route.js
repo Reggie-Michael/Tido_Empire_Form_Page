@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import Agent from "@/models/agent";
 import fs from "fs";
 import { join } from "path";
-
 import path from "path";
 import { connectToDB } from "@/utils/database";
 import nodemailer from "nodemailer";
@@ -225,8 +224,7 @@ const validateImage = (image) => {
 // Function to save the image
 const saveImage = async (imageFile, imageName) => {
   const folderId = process.env.GOOGLE_DRIVE_AGENT_FOLDER;
-  const uploadFolder =  "./app/data/upload"; // Update this with your actual path
-
+  const uploadFolder = "./app/data/upload"; // Update this with your actual path
   // Get the file extension from the image file name
   const fileExtension = imageFile.name.split(".").pop();
 
@@ -240,14 +238,14 @@ const saveImage = async (imageFile, imageName) => {
     // Convert the image data to a Buffer
     const imageData = Buffer.from(await imageFile.arrayBuffer());
 
-    // Write the image data to the temporary file
-    fs.writeFileSync(tempFilePath, imageData);
+    // // Write the image data to the temporary file
+    // fs.writeFileSync(tempFilePath, imageData);
 
-    // Upload the temporary file to Google Drive
-    await uploadFile(tempFilePath, imageName, folderId);
+    // Upload the image file to Google Drive
+    await uploadFile(imageData, imageName, folderId, true, true);
 
     // Return the temporary file path
-    return `${folderId}/imageName`;
+    return `https://drive.google.com/drive/u/1/folders/${folderId}___${imageName}`;
   } catch (error) {
     try {
       const errorData = {
@@ -260,9 +258,6 @@ const saveImage = async (imageFile, imageName) => {
       console.error("Error writing to log file:", err);
     }
     return null; // Return null if there was an error
-  } finally {
-    // Delete the temporary file after uploading
-    fs.unlinkSync(tempFilePath);
   }
 };
 // Create a Nodemailer transporter
@@ -381,7 +376,7 @@ const validateCode = async (verificationCode) => {
         backendServerUrl: "api/auth/signup",
         error: error, // Add your error message here
       };
-       await writeToLogFile({ errorData });
+      await writeToLogFile({ errorData });
     } catch (err) {
       console.error("Error writing to log file:", err);
     }
@@ -1333,6 +1328,26 @@ export const POST = async (request) => {
         }
 
         resetData();
+        try {
+          const errorData = {
+            errorMessage: "A new Agent has been created",
+            referrerUrl: agentId,
+            backendServerUrl: "api/auth/signup",
+            error: "success", // Add your error message here
+            request: {
+              headers: {
+                companyKeyId: companyKey,
+                companyKey: keyExist.type == "agency" ? keyExist.key : null,
+                companyRelation: company ? company._id : null,
+                creationDate: new Date().toISOString(),
+              },
+              body: newAgent.key,
+            },
+          };
+          await writeToLogFile({ errorData });
+        } catch (err) {
+          console.error("Error writing to log file:", err);
+        }
         return new Response(
           JSON.stringify({ success: true, ref: agentId, key: newAgent.key }),
           {

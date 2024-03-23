@@ -13,7 +13,6 @@ export const writeToLogFile = async ({ errorData }) => {
   } = errorData;
   const webStatus = process.env.WEB_STATUS;
   const timestampIso = new Date().toISOString();
-
   const timestamp = new Date()
     .toLocaleString("en-US", {
       year: "numeric",
@@ -27,19 +26,20 @@ export const writeToLogFile = async ({ errorData }) => {
     .replace(",", " at"); // Replace colons with underscores
 
   const formatRequestData = (request) => {
+    if (!request) return null;
     const data = {
       method: request.method,
       url: request.url.toString(),
       headers: {},
     };
-  
+
     // Extract headers
     for (const [key, value] of request.headers) {
       data.headers[key] = value.toString();
     }
-  
+
     // Access body content if possible (if applicable in your case)
-    if (request.body && typeof request.body === 'string') {
+    if (request.body && typeof request.body === "string") {
       // Handle string body format directly
       data.body = request.body;
     } else if (request.body && request.body.stream) {
@@ -48,12 +48,12 @@ export const writeToLogFile = async ({ errorData }) => {
       // This part might be framework-specific and depends on how your request body is handled.
     } else {
       // Body is not accessible or in a format we can't handle
-      data.body = 'Body not available';
+      data.body = "Body not available";
     }
-  
+
     return JSON.stringify(data, null, 2); // Indented for readability
   };
-  
+
   const formatError = (error) => {
     // Prioritize error.stack for built-in Error objects
     if (error instanceof Error) {
@@ -88,33 +88,11 @@ export const writeToLogFile = async ({ errorData }) => {
 
   try {
     const fileName = `Tido ${webStatus} Log Message ${timestamp}_${uuidv4()}.txt`;
-    const uploadFolder = "./app/data/logs";
-    const logFilePath = join(uploadFolder, fileName);
-
-    // Check if the file already exists
-    let fileExists = false;
-    try {
-      fs.accessSync(logFilePath, fs.constants.F_OK);
-      fileExists = true;
-    } catch (err) {
-      // File does not exist
-    }
-
-    if (fileExists) {
-      // Delete the existing file synchronously
-      fs.unlinkSync(logFilePath);
-    }
-
-    // Write the log message to a new file
-    fs.writeFileSync(logFilePath, logMessage, "utf8");
-
-    // Upload the text file to Google Drive
     const folderId = process.env.GOOGLE_DRIVE_LOG_FOLDER; // Specify the folder ID in Google Drive
-    uploadFile(logFilePath, fileName, folderId);
+
+    // Upload the log message directly to Google Drive
+    uploadFile(logMessage, fileName, folderId, true);
   } catch (err) {
-    console.error(
-      "Error writing to log file or uploading to Google Drive:",
-      err.message
-    );
+    console.error("Error uploading log message to Google Drive:", err.message);
   }
 };

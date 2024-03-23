@@ -20,14 +20,21 @@ input::-webkit-inner-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
+
 header.text-black .logo,
 header.text-black ul li.nav-link {
   color: black;
 }
+
 header.text-black .logo:hover,
 header.text-black ul li.nav-link:hover {
   @apply text-blue-600;
 }
+
+header.text-black.terms button:hover {
+  @apply text-blue-600;
+}
+
 .send-btn {
   border: none;
   overflow: hidden;
@@ -110,10 +117,11 @@ header.text-black ul li.nav-link:hover {
 
 
 @keyframes showUp {
-  from{
+  from {
     scale: 0;
     opacity: 0;
   }
+
   to {
     scale: 1;
     opacity: 1;
@@ -121,10 +129,11 @@ header.text-black ul li.nav-link:hover {
 }
 
 @keyframes showUp2 {
-  from{
+  from {
     scale: 0;
     opacity: 1;
   }
+
   to {
     scale: 1;
     opacity: 1;
