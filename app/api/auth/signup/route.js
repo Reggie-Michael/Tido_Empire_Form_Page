@@ -38,11 +38,21 @@ const verificationData = {
 let numberOfTries = 3;
 let retryCountdown;
 const inputLength = {
-  nameMinLength: agency === "company" ? 4 : 2,
-  nameMaxLength: agency === "company" ? 60 : 20,
+  get nameMinLength() {
+    return agency === "company" ? 4 : 2;
+  },
+  get nameMaxLength() {
+    return agency === "company" ? 60 : 20;
+  },
   numberMinLength: 7,
   numberMaxLength: 25,
 };
+
+// Function to update agency and trigger recalculation of inputLength properties
+const updateAgency = (newAgency) => {
+  agency = newAgency;
+};
+
 const isValidExpression = (name, regex) => regex.test(name);
 const isWithinLengthRange = (str, minLength, maxLength) =>
   str.length >= minLength && str.length <= maxLength;
@@ -66,7 +76,7 @@ const validateMainName = (name) => {
   const minLength = inputLength.nameMinLength;
   const maxLength = inputLength.nameMaxLength;
   const nameRegex = /^[a-zA-Z ]+$/;
-  console.log(minLength, maxLength, name)
+  console.log(minLength, maxLength, name);
   try {
     let message = null;
 
@@ -77,7 +87,7 @@ const validateMainName = (name) => {
     } else if (!isWithinLengthRange(name, minLength, maxLength)) {
       message = { error: "minMaxInvalid", type: "fNameVoidCharLength" };
     }
-console.log(message)
+    console.log(message);
     return message ? message : "passCheck";
   } catch (error) {
     return "internalValidationError";
@@ -619,6 +629,9 @@ export const POST = async (request) => {
 
         // const agency = newFormData.get("agency");
 
+        // // Call updateAgency whenever agency changes
+        // updateAgency(newFormData.get("agency"));
+
         if (numberOfTries === 0)
           return new Response(
             JSON.stringify({
@@ -846,7 +859,11 @@ export const POST = async (request) => {
         }
 
         //     //
-        agency = newFormData.get("agency");
+        // agency = newFormData.get("agency");
+
+        // Call updateAgency whenever agency changes
+        updateAgency(newFormData.get("agency"));
+
         if (!agency || !["company", "individual"].includes(agency)) {
           return new Response(
             JSON.stringify({
@@ -912,7 +929,7 @@ export const POST = async (request) => {
         }
 
         if (errorFields.length > 0) {
-          console.log(errorFields, errors, rules)
+          console.log(errorFields, errors, rules);
           return new Response(
             JSON.stringify({ error: "Validation failed", errors }),
             { status: 400 }
