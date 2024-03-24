@@ -877,23 +877,18 @@ export const POST = async (request) => {
 
         const validationRules = {
           common: {
-            email: validateEmail(newFormData.get("email")),
-            pNumber: validatePhoneNumber(newFormData.get("pNumber")),
-            image: validateImage(newFormData.get("image")),
+            email: () => validateEmail(newFormData.get("email")),
+            pNumber: () => validatePhoneNumber(newFormData.get("pNumber")),
+            image: () => validateImage(newFormData.get("image")),
           },
           company: {
-            name: validateMainName(
-              newFormData.get("companyName"),
-              4,
-              35,
-              "companyName"
-            ),
-            cacNo: validateCacNumber(newFormData.get("cacNo")),
-            address: validateAddress(newFormData.get("address")),
+            name: () => validateMainName(newFormData.get("companyName")),
+            cacNo: () => validateCacNumber(newFormData.get("cacNo")),
+            address: () => validateAddress(newFormData.get("address")),
           },
           individual: {
-            fName: validateMainName(newFormData.get("fName"), 2, 15, "fName"),
-            lName: validateOtherName(newFormData.get("lName"), 2, 15, "lName"),
+            fName: () => validateMainName(newFormData.get("fName")),
+            lName: () => validateOtherName(newFormData.get("lName")),
           },
         };
 
