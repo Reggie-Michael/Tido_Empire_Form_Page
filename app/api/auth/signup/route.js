@@ -76,7 +76,6 @@ const validateMainName = (name) => {
   const minLength = inputLength.nameMinLength;
   const maxLength = inputLength.nameMaxLength;
   const nameRegex = /^[a-zA-Z ]+$/;
-  console.log(minLength, maxLength, name);
   try {
     let message = null;
 
@@ -87,7 +86,6 @@ const validateMainName = (name) => {
     } else if (!isWithinLengthRange(name, minLength, maxLength)) {
       message = { error: "minMaxInvalid", type: "fNameVoidCharLength" };
     }
-    console.log(message);
     return message ? message : "passCheck";
   } catch (error) {
     return "internalValidationError";
@@ -118,6 +116,7 @@ const validateOtherName = (name) => {
 };
 const validateEmail = (email) => {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/i;
+  console.log(email);
   try {
     if (!email) {
       return { error: "inputNull", type: "emailNull" };
@@ -893,9 +892,8 @@ export const POST = async (request) => {
               fName: (() => validateMainName(newFormData.get("fName")))(),
               lName: (() => validateOtherName(newFormData.get("lName")))(),
             };
-          }
+          },
         };
-        
 
         // Validate form data
         const errors = {};
@@ -928,8 +926,8 @@ export const POST = async (request) => {
           return new Response("Internal server error", { status: 500 });
         }
 
+        console.log("Signup error check", errorFields, errors);
         if (errorFields.length > 0) {
-          console.log(errorFields, errors, rules);
           return new Response(
             JSON.stringify({ error: "Validation failed", errors }),
             { status: 400 }
