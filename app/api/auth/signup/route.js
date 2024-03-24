@@ -66,6 +66,7 @@ const validateMainName = (name) => {
   const minLength = inputLength.nameMinLength;
   const maxLength = inputLength.nameMaxLength;
   const nameRegex = /^[a-zA-Z ]+$/;
+  console.log(minLength, maxLength, name)
   try {
     let message = null;
 
