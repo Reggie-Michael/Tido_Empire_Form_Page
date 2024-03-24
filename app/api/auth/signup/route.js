@@ -76,7 +76,7 @@ const validateMainName = (name) => {
     } else if (!isWithinLengthRange(name, minLength, maxLength)) {
       message = { error: "minMaxInvalid", type: "fNameVoidCharLength" };
     }
-
+console.log(message)
     return message ? message : "passCheck";
   } catch (error) {
     return "internalValidationError";
@@ -911,7 +911,7 @@ export const POST = async (request) => {
         }
 
         if (errorFields.length > 0) {
-          console.log(errorFields)
+          console.log(errorFields, errors, rules)
           return new Response(
             JSON.stringify({ error: "Validation failed", errors }),
             { status: 400 }
