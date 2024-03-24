@@ -116,7 +116,6 @@ const validateOtherName = (name) => {
 };
 const validateEmail = (email) => {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/i;
-  console.log(email);
   try {
     if (!email) {
       return { error: "inputNull", type: "emailNull" };
@@ -926,10 +925,13 @@ export const POST = async (request) => {
           return new Response("Internal server error", { status: 500 });
         }
 
-        console.log("Signup error check", errorFields, errors);
         if (errorFields.length > 0) {
+          console.log("Signup error check", errorFields, errors);
           return new Response(
-            JSON.stringify({ error: "Validation failed", errors }),
+            JSON.stringify({
+              error: "Validation failed, Input valid Values",
+              errors,
+            }),
             { status: 400 }
           );
         }

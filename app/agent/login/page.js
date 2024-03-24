@@ -18,7 +18,7 @@ export default function Login() {
   const nameMinLength = 2;
   const nameMaxLength = 20;
   const companyNameMinLength = 4;
-  const companyNameMaxLength = 70;
+  const companyNameMaxLength = 60;
   const numberMinLength = 7;
   const numberMaxLength = 25;
   const [isLoading, setIsLoading] = useState(true);
