@@ -39,7 +39,7 @@ let numberOfTries = 3;
 let retryCountdown;
 const inputLength = {
   nameMinLength: agency === "company" ? 4 : 2,
-  nameMaxLength: agency === "company" ? 35 : 15,
+  nameMaxLength: agency === "company" ? 60 : 20,
   numberMinLength: 7,
   numberMaxLength: 25,
 };
@@ -911,6 +911,7 @@ export const POST = async (request) => {
         }
 
         if (errorFields.length > 0) {
+          console.log(errorFields)
           return new Response(
             JSON.stringify({ error: "Validation failed", errors }),
             { status: 400 }
